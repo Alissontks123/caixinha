@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFields';
 import { statusText } from '../components/SyncPanel';
 import { HelpButton } from '../components/TabHelp';
+import { StartDateHint } from '../components/RuleFields';
 import { connect, useSyncState } from '../sync/engine';
 import { ErrorBox, Field, MoneyInput, useAction } from '../components/ui';
 import { CATEGORY_COLORS, SPECIAL_CATEGORIES } from '../db/db';
@@ -115,13 +116,14 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
         <section className="card stack">
           <h2>Saldo inicial da Caixinha Nubank</h2>
           <div className="grid-2">
-            <Field label="Data do saldo" hint="Saldo ao final deste dia. Dica: use o último dia do mês anterior, pois o sistema contará os aportes da caixinha com base nos extratos a partir dessa data.">
+            <Field label="Data do saldo">
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </Field>
             <Field label="Saldo total da caixinha nessa data">
               <MoneyInput value={startBalance} onChange={setStartBalance} />
             </Field>
           </div>
+          <StartDateHint />
           <Field label="Aporte fixo mensal da caixinha" hint={`Valor que deverá ser aplicado na caixinha todo mês, independente dos gastos (a partir de ${monthLabel(startMonth)}).`}>
             <MoneyInput value={fixed} onChange={setFixed} />
           </Field>
@@ -130,7 +132,7 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
         <section className="card stack">
           <h2>Categorias</h2>
           <p className="muted small">
-            Complete a frase de cada categoria. Os gastos excedentes contam em blocos, e um bloco incompleto conta como inteiro.
+            Preencha os valores de cada categoria. Os gastos excedentes contam em blocos, e um bloco incompleto conta como inteiro.<br />
             Exemplo: limite de R$ 500, a cada R$ 100 aportar R$ 50. Gastou R$ 650 → excedeu R$ 150 → 2 blocos → aporte de R$ 100.
           </p>
           {cats.map((c) => (

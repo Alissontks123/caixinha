@@ -382,7 +382,16 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 .help-modal { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; line-height: 1.45; }
 .help-modal p { margin: 0; }
 
-/* frase da regra da categoria, com os campos no meio do texto */
-.rule-sentence { margin: 0; line-height: 2.6; }
-.rule-sentence .money-input { display: inline-flex; vertical-align: middle; width: 128px; line-height: normal; }
-.rule-sentence .money-input input { width: 100%; min-width: 0; }
+/* regra da categoria: uma linha por campo, campos alinhados numa coluna */
+.rule-lines {
+  display: grid; grid-template-columns: minmax(0, 1fr) 140px max-content;
+  align-items: center; gap: 8px 12px;
+}
+.rule-lines .money-input { width: 100%; }
+.rule-lines .money-input input { width: 100%; min-width: 0; }
+.rule-suffix { white-space: nowrap; }
+@media (max-width: 520px) {
+  .rule-lines { grid-template-columns: 140px 1fr; row-gap: 6px; }
+  .rule-lines .rule-text { grid-column: 1 / -1; padding-top: 6px; }
+}
+.start-hint { margin: -4px 0 0; line-height: 1.45; }

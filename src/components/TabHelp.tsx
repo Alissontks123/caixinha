@@ -11,7 +11,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p><b>Saldo inicial da Caixinha Nubank:</b> informe quanto havia na caixinha ao final de um dia. Use o último dia do mês anterior:
           as aplicações e os resgates dos extratos só contam a partir dessa data.</p>
         <p><b>Aporte fixo mensal da caixinha:</b> valor que deve ser aplicado na caixinha todo mês, independente dos gastos.</p>
-        <p><b>Categorias:</b> complete a frase de cada uma. Quando os gastos do mês passam do limite, os gastos excedentes contam em blocos
+        <p><b>Categorias:</b> preencha os valores de cada uma. Quando os gastos do mês passam do limite, os gastos excedentes contam em blocos
           (um bloco incompleto conta como inteiro), e cada bloco gera um aporte na caixinha.</p>
         <p className="muted">Exemplo: limite de R$ 500, a cada R$ 100 aportar R$ 50. Gastou R$ 650 → excedeu R$ 150 → 2 blocos → aporte de R$ 100.</p>
         <p>Desligue <b>Gera aporte na caixinha</b> para categorias sem limite, como gastos necessários: elas só mostram o total gasto.</p>

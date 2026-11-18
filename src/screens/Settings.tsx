@@ -4,7 +4,7 @@ import {
   addCategory, deleteCategory, deleteFixedVersion, deleteLearnedRule, deleteRuleVersion, exportBackup, importBackup,
   moveCategory, setC6Password, setCardMine, setCategoryRule, setFixedContribution, updateCategory, updateProfile,
 } from '../db/repo';
-import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFields';
+import { parseRuleDraft, RuleFields, StartDateHint, type RuleDraft } from '../components/RuleFields';
 import { SyncSettings } from '../components/SyncPanel';
 import { UNIDENTIFIED_ID } from '../db/db';
 import { resolveVersion, ruleContributes, ruleForMonth } from '../domain/rules';
@@ -357,9 +357,10 @@ function ProfileForm({ profile, onClose }: { profile: Profile; onClose: () => vo
       <form className="stack" onSubmit={submit}>
         <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} /></Field>
         <div className="grid-2">
-          <Field label="Data do saldo inicial" hint="Saldo ao final deste dia. Dica: use o último dia do mês anterior, pois o sistema contará os aportes da caixinha com base nos extratos a partir dessa data."><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
+          <Field label="Data do saldo inicial"><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
           <Field label="Saldo inicial da Caixinha Nubank"><MoneyInput value={startBalance} onChange={setStartBalance} /></Field>
         </div>
+        <StartDateHint />
         <Field label="Alertar quando a categoria atingir (% do limite)">
           <input type="number" min={1} max={100} value={threshold} onChange={(e) => setThreshold(e.target.value)} />
         </Field>
