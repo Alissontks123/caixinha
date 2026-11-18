@@ -22,7 +22,8 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
   const ledger = computeLedger({
     profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today: todayISO(),
   });
-  const overdue = ledger.months.filter((m) => m.month < currentMonth() && m.pending > 0).sort((a, b) => a.month.localeCompare(b.month));
+  // aviso só no próprio mês que ficou com aporte pendente (nos meses seguintes ele aparece em "Meses anteriores")
+  const overdue = ledger.months.filter((m) => m.month === month && m.month < currentMonth() && m.pending > 0);
   const overdueTotal = overdue.reduce((s, m) => s + m.pending, 0);
   const statement = computeStatements(
     { profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today: todayISO() },
