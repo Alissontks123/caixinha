@@ -133,7 +133,15 @@ aparelho (IndexedDB) e numa pasta privada do Google Drive de cada usuário (sinc
      por categoria, aportes devido × pago e saldo da caixinha; período 6 meses / 12 meses / tudo;
      todos com legenda, dica ao tocar e "ver tabela". Cores = paleta validada para daltonismo, com modo escuro.
    - Exportar relatório (PDF e Excel) de um intervalo de meses: resumo, categorias, lançamentos, caixinha.
-5. Sincronização Google Drive + publicação no GitHub Pages + guia de instalação.
+5. Sincronização Google Drive + publicação no GitHub Pages + guia de instalação:
+   - ✅ Publicado em https://alissontks123.github.io/caixinha/ (repositório público Alissontks123/caixinha;
+     cada envio para `main` publica sozinho via GitHub Actions). Verificado: offline e importação offline.
+   - ✅ Tela "Ajuda" no app (instalação iPhone/Windows, Drive, importação, perguntas frequentes).
+   - ✅ Sincronização implementada e testada com Google simulado (3 aparelhos): mesclagem item a item,
+     primeira conexão pergunta (juntar / só Drive / só aparelho), "Já uso em outro aparelho" na tela inicial.
+   - ⏳ Falta o ID do cliente OAuth do Google (Google Cloud Console) para ligar a sincronização de verdade
+     (`src/config.ts` → DEFAULT_CLIENT_ID).
+   - Scripts de verificação: `scripts/check-live.mjs` (site publicado), `scripts/smoke-sync.mjs` (sincronização).
 
 ## Pendências do usuário
 - Nenhum exemplo de **resgate** RDB ainda: o leitor assume "Resgate RDB" como entrada; validar quando aparecer um.
