@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { initSync } from './sync/engine';
+import '@fontsource-variable/nunito';
 import './styles.css';
 
 // pede ao navegador para não apagar os dados locais quando faltar espaço

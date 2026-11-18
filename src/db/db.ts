@@ -41,6 +41,18 @@ export class AppDB extends Dexie {
     this.version(4).stores({
       meta: 'id',
     });
+    // tema "Lavanda": as categorias passam para as cores pastel (pela posição na lista)
+    this.version(5).stores({}).upgrade(async (tx) => {
+      const cats = (await tx.table('categories').toArray()) as Category[];
+      const normal = cats.filter((c) => c.kind === 'normal').sort((a, b) => a.order - b.order);
+      const now = Date.now();
+      for (const [i, c] of normal.entries()) {
+        await tx.table('categories').update(c.id, { color: SERIES_LIGHT[i % SERIES_LIGHT.length], updatedAt: now });
+      }
+      for (const special of SPECIAL_CATEGORIES) {
+        if (cats.some((c) => c.id === special.id)) await tx.table('categories').update(special.id, { color: special.color, updatedAt: now });
+      }
+    });
   }
 }
 
@@ -88,7 +100,7 @@ for (const name of ['profile', 'categories', 'categoryRules', 'fixedContribution
 export const UNIDENTIFIED_ID = 'a-identificar';
 export const IGNORED_ID = 'nao-e-gasto';
 
-// cores = paleta validada (src/lib/colors.ts), na ordem fixa
+// cores = paleta pastel (src/lib/colors.ts), na ordem fixa
 export const DEFAULT_CATEGORIES = [
   { name: 'Alimentação', color: SERIES_LIGHT[0], contributes: true, limit: 100000, blockSize: 10000, blockAmount: 5000 },
   { name: 'Hobbys', color: SERIES_LIGHT[1], contributes: true, limit: 50000, blockSize: 10000, blockAmount: 5000 },
@@ -99,8 +111,8 @@ export const DEFAULT_CATEGORIES = [
 ];
 
 export const SPECIAL_CATEGORIES: Category[] = [
-  { id: UNIDENTIFIED_ID, name: 'A identificar', kind: 'unidentified', order: 1000, color: '#8a8f98' },
-  { id: IGNORED_ID, name: 'Não é gasto', kind: 'ignored', order: 1001, color: '#b0b4ba' },
+  { id: UNIDENTIFIED_ID, name: 'A identificar', kind: 'unidentified', order: 1000, color: '#a9a5bd' },
+  { id: IGNORED_ID, name: 'Não é gasto', kind: 'ignored', order: 1001, color: '#c6c3d6' },
 ];
 
 export const CATEGORY_COLORS = SERIES_LIGHT;
