@@ -84,49 +84,25 @@ function validMovements(input: LedgerInput): CaixinhaMovement[] {
 
 /**
  * Calcula a situação da caixinha.
- * Os eventos são processados em ordem de data. Cada aplicação quita primeiro a dívida
- * do mês mais antigo; o que sobra vira crédito que abate as próximas dívidas.
+ * As aplicações quitam primeiro a dívida do mês mais antigo; o que sobra vira crédito que abate as próximas dívidas.
  */
 export function computeLedger(input: LedgerInput): Ledger {
   const debts = buildDebts(input);
   const movements = validMovements(input);
 
-  type Event =
-    | { date: ISODate; order: number; debt: Debt }
-    | { date: ISODate; order: number; payment: Cents };
-  const events: Event[] = [
-    // no mesmo dia, a dívida nasce antes da aplicação (aplicar no dia 1º quita o fixo do mês)
-    ...debts.map((debt) => ({ date: debt.date, order: 0, debt })),
-    ...movements.filter((m) => m.type === 'aplicacao').map((m) => ({ date: m.date, order: 1, payment: m.amount })),
-  ];
-  events.sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
-
-  const open: { debt: Debt; remaining: Cents }[] = [];
+  // Todo o valor aplicado quita as dívidas do mês mais antigo para o mais novo, sem depender da data
+  // em que cada dívida surgiu (ex.: o excedente de outubro, apurado ao fechar o mês em novembro, é quitado
+  // antes do fixo de novembro, mesmo por uma aplicação feita antes do fechamento). O que sobra vira crédito.
+  const ordered = [...debts].sort((a, b) => a.refMonth.localeCompare(b.refMonth) || a.date.localeCompare(b.date));
   const paidByMonth = new Map<Month, Cents>();
-  let credit = 0;
-
-  const pay = (amount: Cents): Cents => {
-    open.sort((a, b) => a.debt.refMonth.localeCompare(b.debt.refMonth) || a.debt.date.localeCompare(b.debt.date));
-    let left = amount;
-    for (const item of open) {
-      if (left <= 0) break;
-      const used = Math.min(left, item.remaining);
-      item.remaining -= used;
-      left -= used;
-      paidByMonth.set(item.debt.refMonth, (paidByMonth.get(item.debt.refMonth) ?? 0) + used);
-    }
-    for (let i = open.length - 1; i >= 0; i--) if (open[i].remaining === 0) open.splice(i, 1);
-    return left;
-  };
-
-  for (const ev of events) {
-    if ('debt' in ev) {
-      open.push({ debt: ev.debt, remaining: ev.debt.amount });
-      if (credit > 0) credit = pay(credit);
-    } else {
-      credit += pay(ev.payment);
-    }
+  let left = movements.filter((m) => m.type === 'aplicacao').reduce((sum, m) => sum + m.amount, 0);
+  for (const d of ordered) {
+    if (left <= 0) break;
+    const used = Math.min(left, d.amount);
+    left -= used;
+    paidByMonth.set(d.refMonth, (paidByMonth.get(d.refMonth) ?? 0) + used);
   }
+  const credit = left;
 
   // agrupa por mês de referência
   const byMonth = new Map<Month, MonthLedger>();
@@ -198,4 +174,63 @@ export function balanceByMonth(input: Omit<LedgerInput, 'fixedVersions' | 'closi
 
 function emptyMonth(month: Month): MonthLedger {
   return { month, fixed: 0, overflow: 0, resgates: 0, due: 0, paid: 0, pending: 0, closed: false };
+}
+
+/**
+ * Extrato do mês, no formato de fatura de cartão:
+ * saldo dos meses anteriores + o que é do mês − o que foi aportado no mês = o que falta.
+ * Os aportes abatem primeiro o saldo anterior (o mais antigo), por isso basta acumular o saldo.
+ */
+export interface MonthStatement {
+  month: Month;
+  /** O que ficou faltando dos meses anteriores no início do mês (negativo = crédito). */
+  previous: Cents;
+  fixed: Cents;
+  /** Aporte por gastos excedentes (previsão enquanto o mês está aberto). */
+  overflow: Cents;
+  /** true quando o excedente ainda é previsão (mês aberto). */
+  overflowForecast: boolean;
+  resgates: Cents;
+  /** previous + fixed + overflow + resgates. */
+  total: Cents;
+  /** Aplicações feitas na caixinha durante o mês. */
+  paid: Cents;
+  /** total − paid (negativo = crédito para os próximos meses). */
+  remaining: Cents;
+  closed: boolean;
+}
+
+/**
+ * Extratos do mês de início da caixinha até `until` (ou até hoje, o que for maior).
+ * `forecast(m)` dá o aporte por gastos excedentes previsto de um mês ainda aberto: ele aparece
+ * no próprio mês, mas só passa para os meses seguintes quando o mês é fechado.
+ */
+export function computeStatements(input: LedgerInput, until: Month, forecast: (m: Month) => Cents = () => 0): MonthStatement[] {
+  const startMonth = startMonthOf(input.profile);
+  const todayMonth = monthOf(input.today);
+  const last = until > todayMonth ? until : todayMonth;
+  if (last < startMonth) return [];
+  const closings = new Map(input.closings.map((c) => [c.month, c]));
+  const paidBy = new Map<Month, Cents>();
+  const resgatesBy = new Map<Month, Cents>();
+  for (const mv of validMovements(input)) {
+    const m = monthOf(mv.date);
+    if (mv.type === 'aplicacao') paidBy.set(m, (paidBy.get(m) ?? 0) + mv.amount);
+    if (mv.type === 'resgate') resgatesBy.set(m, (resgatesBy.get(m) ?? 0) + mv.amount);
+  }
+  const out: MonthStatement[] = [];
+  let carry = 0;
+  for (const month of monthRange(startMonth, last)) {
+    const closing = closings.get(month);
+    const fixed = fixedForMonth(input.fixedVersions, month, startMonth);
+    const overflow = closing ? closing.overflowTotal : forecast(month);
+    const resgates = resgatesBy.get(month) ?? 0;
+    const paid = paidBy.get(month) ?? 0;
+    const previous = carry;
+    const total = previous + fixed + overflow + resgates;
+    out.push({ month, previous, fixed, overflow, overflowForecast: !closing, resgates, total, paid, remaining: total - paid, closed: !!closing });
+    // o excedente de um mês aberto ainda é previsão: não passa para o mês seguinte
+    carry = previous + fixed + (closing ? overflow : 0) + resgates - paid;
+  }
+  return out;
 }

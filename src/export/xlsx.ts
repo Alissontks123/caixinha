@@ -64,15 +64,19 @@ export function reportToXlsx(r: Report): Uint8Array {
       name: 'Resumo',
       columns: [
         { header: 'Mês', width: 12 }, { header: 'Situação', width: 10 },
-        { header: 'Aporte fixo', width: 14, type: 'money' }, { header: 'Estouros', width: 14, type: 'money' },
-        { header: 'Total devido', width: 14, type: 'money' }, { header: 'Pago', width: 14, type: 'money' },
-        { header: 'Pendente', width: 14, type: 'money' },
+        { header: 'Saldo anterior', width: 15, type: 'money' }, { header: 'Fixo', width: 14, type: 'money' },
+        { header: 'Excedentes', width: 14, type: 'money' }, { header: 'Resgates', width: 14, type: 'money' },
+        { header: 'Total', width: 14, type: 'money' }, { header: 'Aportado', width: 14, type: 'money' },
+        { header: 'Falta', width: 14, type: 'money' },
       ],
-      rows: r.months.map((m) => [
-        monthShort(m.month), m.summary.closed ? 'Fechado' : 'Aberto',
-        reais(m.summary.fixed), reais(m.summary.overflowTotal), reais(m.summary.totalDue),
-        reais(m.ledger?.paid ?? 0), reais(m.ledger?.pending ?? 0),
-      ]),
+      rows: r.months.map((m) => {
+        const s = m.statement;
+        return [
+          monthShort(m.month), m.summary.closed ? 'Fechado' : 'Aberto',
+          reais(s?.previous ?? 0), reais(s?.fixed ?? m.summary.fixed), reais(s?.overflow ?? m.summary.overflowTotal),
+          reais(s?.resgates ?? 0), reais(s?.total ?? m.summary.totalDue), reais(s?.paid ?? 0), reais(s?.remaining ?? 0),
+        ];
+      }),
     },
     {
       name: 'Categorias',

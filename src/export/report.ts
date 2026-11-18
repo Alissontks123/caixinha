@@ -1,5 +1,5 @@
 import { myAmount } from '../domain/share';
-import { computeLedger, type MonthLedger } from '../domain/ledger';
+import { computeLedger, computeStatements, type MonthLedger, type MonthStatement } from '../domain/ledger';
 import { summarizeMonth, type MonthSummary } from '../domain/summary';
 import type { CaixinhaMovement, Cents, ISODate, Month } from '../domain/types';
 import { monthLabel, monthRange } from '../lib/months';
@@ -9,6 +9,8 @@ export interface ReportMonth {
   month: Month;
   summary: MonthSummary;
   ledger?: MonthLedger;
+  /** Formato de fatura: saldo anterior + do mês − aportado = falta. */
+  statement?: MonthStatement;
 }
 
 export interface ReportTransaction {
@@ -53,10 +55,16 @@ const MOVE: Record<CaixinhaMovement['type'], string> = { aplicacao: 'Aplicação
 export function buildReport(data: ReadyData, from: Month, to: Month, today: ISODate): Report {
   const input = summaryInput(data);
   const ledger = computeLedger({ profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today });
+  const statements = computeStatements(
+    { profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today },
+    to,
+    (m) => summarizeMonth(m, input).overflowTotal,
+  );
   const months = monthRange(from, to).map((month) => ({
     month,
     summary: summarizeMonth(month, input),
     ledger: ledger.months.find((l) => l.month === month),
+    statement: statements.find((s) => s.month === month),
   }));
   const catName = new Map(data.categories.map((c) => [c.id, c.name]));
   const inRange = (m: Month) => m >= from && m <= to;
@@ -81,7 +89,8 @@ export function buildReport(data: ReadyData, from: Month, to: Month, today: ISOD
     transactions,
     movements,
     balance: ledger.balance,
-    pendingTotal: months.reduce((s, m) => s + (m.ledger?.pending ?? 0), 0),
+    // o que falta no último mês do período já inclui o que veio dos meses anteriores
+    pendingTotal: months[months.length - 1]?.statement?.remaining ?? 0,
   };
 }
 

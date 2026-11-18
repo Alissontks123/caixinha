@@ -5,7 +5,7 @@ import { parseMoney, formatMoney } from '../lib/money';
 import { addMonths, monthRange } from '../lib/months';
 import { compareMonth, monthStatus } from './alerts';
 import { historyMonths } from './history';
-import { balanceByMonth, computeLedger, startMonthOf, type LedgerInput } from './ledger';
+import { balanceByMonth, computeLedger, computeStatements, startMonthOf, type LedgerInput } from './ledger';
 import { fixedForMonth, overflowContribution, resolveVersion, roomUntilNextBlock, ruleForMonth } from './rules';
 import { closeBlocker, summarizeMonth, type SummaryInput } from './summary';
 import type { CaixinhaMovement, Category, CategoryRuleVersion, MonthClosing, Profile, Transaction } from './types';
@@ -159,6 +159,55 @@ describe('caixinha', () => {
     movements: [],
     today: '2026-11-17',
     ...over,
+  });
+
+  it('extrato do mês: o que falta passa para o mês seguinte e o aporte abate primeiro o anterior', () => {
+    const closing = (month: string, overflow: number) => ({
+      month, closedAt: `${month}-28`, overflowTotal: R(overflow), totalDue: R(300 + overflow), fixedAmount: R(300), categories: [],
+    }) as unknown as LedgerInput['closings'][number];
+    const st = computeStatements(
+      input({
+        closings: [closing('2026-09', 0), closing('2026-10', 200)],
+        movements: [mv('2026-09-05', 'aplicacao', 300), mv('2026-10-05', 'aplicacao', 300), mv('2026-11-03', 'aplicacao', 250)],
+      }),
+      '2026-11',
+      (m) => (m === '2026-11' ? R(200) : 0), // previsão de excedente do mês aberto
+    );
+    const by = Object.fromEntries(st.map((s) => [s.month, s]));
+    expect(by['2026-09'].remaining).toBe(0);
+    // outubro: 300 fixo + 200 excedente − 300 aportado = faltam 200
+    expect(by['2026-10'].remaining).toBe(R(200));
+    // novembro: 200 de meses anteriores + 300 fixo + 200 excedente (previsão) = 700; aportou 250 → faltam 450
+    expect(by['2026-11'].previous).toBe(R(200));
+    expect(by['2026-11'].total).toBe(R(700));
+    expect(by['2026-11'].paid).toBe(R(250));
+    expect(by['2026-11'].remaining).toBe(R(450));
+    expect(by['2026-11'].overflowForecast).toBe(true);
+  });
+
+  it('extrato: mês aberto leva só o fixo para o mês seguinte; aporte a mais vira crédito', () => {
+    const st = computeStatements(
+      input({ movements: [mv('2026-09-05', 'aplicacao', 1000)], today: '2026-11-17' }),
+      '2026-11',
+      () => R(500), // previsão alta em todos os meses abertos: não deve passar adiante
+    );
+    const by = Object.fromEntries(st.map((s) => [s.month, s]));
+    expect(by['2026-09'].remaining).toBe(R(300 + 500 - 1000)); // -200 (sobra no próprio mês)
+    expect(by['2026-10'].previous).toBe(R(-700)); // crédito: 1000 − 300 fixo (a previsão não passa adiante)
+    expect(by['2026-11'].previous).toBe(R(-400));
+    expect(by['2026-11'].remaining).toBe(R(-400 + 300 + 500));
+  });
+
+  it('aplicação feita antes de fechar o mês anterior quita primeiro o excedente dele', () => {
+    const closingOct = { month: '2026-10', closedAt: '2026-11-18', overflowTotal: R(200), fixed: R(300), ignoredTotal: 0, categories: [] };
+    const l = computeLedger(input({
+      today: '2026-11-18',
+      closings: [closingOct],
+      movements: [mv('2026-09-05', 'aplicacao', 300), mv('2026-10-05', 'aplicacao', 300), mv('2026-11-03', 'aplicacao', 250)],
+    }));
+    const by = Object.fromEntries(l.months.map((m) => [m.month, m]));
+    expect(by['2026-10'].pending).toBe(0); // os 250 de novembro quitaram os 200 de outubro
+    expect(by['2026-11'].pending).toBe(R(250));
   });
 
   it('aporte fixo é devido desde o dia 1º de cada mês', () => {

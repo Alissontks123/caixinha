@@ -73,7 +73,7 @@ export function Help({ onBack }: { onBack: () => void }) {
       <Item title="Fechar o mês">
         <p className="small">
           Depois que o mês termina e todos os lançamentos estão classificados, use <b>Fechar mês</b> no Painel. Os valores ficam congelados
-          e o aporte por estouro passa a ser devido. Dá para reabrir se precisar corrigir algo.
+          e o aporte por gastos excedentes passa a ser devido. O que faltar aportar passa para o mês seguinte como "Meses anteriores". Dá para reabrir se precisar corrigir algo.
         </p>
       </Item>
 

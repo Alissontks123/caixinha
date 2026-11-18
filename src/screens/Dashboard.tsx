@@ -6,7 +6,7 @@ import type { Month, Profile } from '../domain/types';
 import { formatMoney } from '../lib/money';
 import { currentMonth, dateLabel, monthLabel, monthShort, todayISO } from '../lib/months';
 import { monthStatus } from '../domain/alerts';
-import { computeLedger } from '../domain/ledger';
+import { computeLedger, computeStatements } from '../domain/ledger';
 import { summaryInput, type AppData } from '../useAppData';
 
 interface Props {
@@ -24,6 +24,11 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
   });
   const overdue = ledger.months.filter((m) => m.month < currentMonth() && m.pending > 0).sort((a, b) => a.month.localeCompare(b.month));
   const overdueTotal = overdue.reduce((s, m) => s + m.pending, 0);
+  const statement = computeStatements(
+    { profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today: todayISO() },
+    month,
+    (m) => (m === month ? summary.overflowTotal : summarizeMonth(m, summaryInput(data)).overflowTotal),
+  ).find((s) => s.month === month);
   const blocker = closeBlocker(summary, currentMonth());
   const threshold = data.profile.alertThreshold / 100;
   const { error, run } = useAction();
@@ -34,7 +39,7 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
       `Fechar ${monthLabel(month)}?`,
       '',
       `Aporte fixo: ${formatMoney(summary.fixed)}`,
-      `Aportes por estouro: ${formatMoney(summary.overflowTotal)}`,
+      `Aportes por gastos excedentes: ${formatMoney(summary.overflowTotal)}`,
       `Total devido: ${formatMoney(summary.totalDue)}`,
       '',
       'Os valores ficarão congelados e os lançamentos do mês não poderão mais ser alterados.',
@@ -42,7 +47,7 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
     if (window.confirm(lines.join('\n'))) run(() => closeMonth(summary));
   };
   const onReopen = () => {
-    if (window.confirm(`Reabrir ${monthLabel(month)}? Os aportes por estouro voltam a ser recalculados até você fechar de novo.`)) {
+    if (window.confirm(`Reabrir ${monthLabel(month)}? Os aportes por gastos excedentes voltam a ser recalculados até você fechar de novo.`)) {
       run(() => reopenMonth(month));
     }
   };
@@ -84,11 +89,36 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
           </span>
         </div>
         <p className="hero-label">Aportes necessários no mês</p>
-        <p className="hero-value">{formatMoney(summary.totalDue)}</p>
-        <div className="hero-split">
-          <div><span className="muted">Fixo</span><b>{formatMoney(summary.fixed)}</b></div>
-          <div><span className="muted">Por gastos excedentes</span><b>{formatMoney(summary.overflowTotal)}</b></div>
-        </div>
+        {statement ? (
+          <>
+            <p className="hero-value">{formatMoney(Math.max(statement.total, 0))}</p>
+            <dl className="hero-lines">
+              <dt>Fixo devido</dt><dd>{formatMoney(statement.fixed)}</dd>
+              <dt>Gastos excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''}</dt>
+              <dd>{formatMoney(statement.overflow)}</dd>
+              {statement.resgates > 0 && <><dt>Resgates a repor</dt><dd>{formatMoney(statement.resgates)}</dd></>}
+              {statement.previous >= 0
+                ? <><dt>Meses anteriores</dt><dd>{formatMoney(statement.previous)}</dd></>
+                : <><dt>Crédito de meses anteriores</dt><dd className="refund">−{formatMoney(-statement.previous)}</dd></>}
+            </dl>
+            <p className="hero-foot small">
+              Já aportado: <b>{formatMoney(statement.paid)}</b> ·{' '}
+              {statement.remaining > 0
+                ? <>Falta: <b className="text-danger">{formatMoney(statement.remaining)}</b></>
+                : statement.remaining < 0
+                  ? <span className="text-ok">Quitado, com crédito de <b>{formatMoney(-statement.remaining)}</b> para os próximos meses</span>
+                  : <b className="text-ok">Quitado</b>}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="hero-value">{formatMoney(summary.totalDue)}</p>
+            <dl className="hero-lines">
+              <dt>Fixo devido</dt><dd>{formatMoney(summary.fixed)}</dd>
+              <dt>Gastos excedentes</dt><dd>{formatMoney(summary.overflowTotal)}</dd>
+            </dl>
+          </>
+        )}
       </section>
 
       {summary.unidentifiedCount > 0 && (

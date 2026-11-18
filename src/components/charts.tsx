@@ -329,7 +329,7 @@ export function DueVsPaidChart({ rows, dark }: { rows: MonthLedger[]; dark: bool
   return (
     <ChartCard
       title="Aportes: devido × pago"
-      subtitle="Aporte fixo + estouros + resgates a repor, comparado com o que foi aplicado"
+      subtitle="Aporte fixo + gastos excedentes + resgates a repor, comparado com o que foi aplicado"
       legend={[{ label: 'Devido', color: due }, { label: 'Pago', color: paid }]}
       table={
         <table className="table">

@@ -1,5 +1,8 @@
 import { formatMoney } from '../lib/money';
 import { dateLabel, monthLabel, monthShort } from '../lib/months';
+
+/** Valor com sinal de menos para crédito. */
+const signedMoney = (c: number) => (c < 0 ? `−${formatMoney(-c)}` : formatMoney(c));
 import type { Report } from './report';
 
 const PRIMARY: [number, number, number] = [47, 111, 94];
@@ -51,23 +54,29 @@ export async function reportToPdf(r: Report): Promise<Blob> {
 
   heading('Resumo');
   table(
-    ['Mês', 'Situação', 'Aporte fixo', 'Estouros', 'Total devido', 'Pago', 'Pendente'],
-    r.months.map((m) => [
-      monthShort(m.month), m.summary.closed ? 'Fechado' : 'Aberto', formatMoney(m.summary.fixed), formatMoney(m.summary.overflowTotal),
-      formatMoney(m.summary.totalDue), formatMoney(m.ledger?.paid ?? 0), formatMoney(m.ledger?.pending ?? 0),
-    ]),
-    [2, 3, 4, 5, 6],
+    ['Mês', 'Situação', 'Saldo anterior', 'Fixo', 'Excedentes', 'Resgates', 'Total', 'Aportado', 'Falta'],
+    r.months.map((m) => {
+      const s = m.statement;
+      return [
+        monthShort(m.month), m.summary.closed ? 'Fechado' : 'Aberto',
+        signedMoney(s?.previous ?? 0), formatMoney(s?.fixed ?? m.summary.fixed), formatMoney(s?.overflow ?? m.summary.overflowTotal),
+        formatMoney(s?.resgates ?? 0), signedMoney(s?.total ?? m.summary.totalDue), formatMoney(s?.paid ?? 0), signedMoney(s?.remaining ?? 0),
+      ];
+    }),
+    [2, 3, 4, 5, 6, 7, 8],
     {
       foot: r.months.length > 1
-        ? ['Total', '', formatMoney(sum(r.months.map((m) => m.summary.fixed))), formatMoney(sum(r.months.map((m) => m.summary.overflowTotal))),
-          formatMoney(sum(r.months.map((m) => m.summary.totalDue))), formatMoney(sum(r.months.map((m) => m.ledger?.paid ?? 0))), formatMoney(r.pendingTotal)]
+        ? ['Total', '', '', formatMoney(sum(r.months.map((m) => m.statement?.fixed ?? 0))), formatMoney(sum(r.months.map((m) => m.statement?.overflow ?? 0))),
+          formatMoney(sum(r.months.map((m) => m.statement?.resgates ?? 0))), '', formatMoney(sum(r.months.map((m) => m.statement?.paid ?? 0))), signedMoney(r.pendingTotal)]
         : undefined,
     },
   );
   doc.setFontSize(9);
   doc.setTextColor(90, 90, 90);
   doc.setFont('helvetica', 'normal');
-  doc.text('Estouros de meses ainda abertos são previsões: só viram dívida quando o mês é fechado.', margin, y - 12);
+  doc.text('O que falta num mês passa para o seguinte como saldo anterior; cada aporte abate primeiro o mais antigo. Valores negativos = crédito.', margin, y - 12);
+  doc.text('Excedentes de meses ainda abertos são previsões: só passam para o mês seguinte quando o mês é fechado.', margin, y);
+  y += 12;
   y += 6;
 
   for (const m of r.months) {

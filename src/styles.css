@@ -420,3 +420,13 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 .scroll-arrow.left { left: 0; }
 .scroll-arrow.right { right: 0; }
 .scroll-arrow:hover { background: var(--surface-2); }
+
+/* quadro "Aportes necessários no mês" (formato de fatura) */
+.hero-lines {
+  display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 4px 0 0;
+  padding-top: 10px; border-top: 1px solid var(--border); font-variant-numeric: tabular-nums;
+}
+.hero-lines dt { color: var(--muted); font-size: 0.9rem; }
+.hero-lines dd { margin: 0; font-weight: 600; text-align: right; }
+.hero-lines .refund { color: var(--ok); }
+.hero-foot { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--border); }

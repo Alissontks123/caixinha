@@ -24,8 +24,11 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
     body: (
       <>
         <p>Resumo do mês escolhido no topo (use ‹ e › para trocar de mês).</p>
-        <p><b>Aportes necessários no mês:</b> quanto deve ir para a caixinha neste mês. É a soma do <b>aporte fixo</b> com os aportes
-          <b> por gastos excedentes</b> das categorias que passaram do limite.</p>
+        <p><b>Aportes necessários no mês:</b> funciona como uma fatura. É a soma do <b>fixo devido</b>, dos aportes por
+          <b> gastos excedentes</b> das categorias que passaram do limite e do que ficou faltando de <b>meses anteriores</b>.
+          Embaixo aparecem o quanto já foi aportado no mês e quanto ainda falta.</p>
+        <p>Cada aporte abate primeiro o valor mais antigo (os meses anteriores). O que faltar no fim do mês passa para o mês seguinte.
+          Os gastos excedentes de um mês aberto são previsão: só passam para o mês seguinte quando o mês é fechado.</p>
         <p><b>Categorias:</b> cada cartão mostra quanto já foi gasto, quanto ainda dá para gastar ou, se passou do limite, quanto excedeu
           e o aporte gerado. Toque numa categoria para ver os gastos dela.</p>
         <p><b>Atenção neste mês:</b> avisa as categorias perto do limite ou acima dele.</p>
@@ -75,7 +78,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p>Cada aplicação quita primeiro o mês pendente mais antigo. Um resgate precisa ser reposto e volta a ser devido.</p>
         <p>Aplicações e resgates entram sozinhos ao importar o extrato da conta Nubank. Use <b>+ Aplicação</b> e <b>− Resgate</b> só para
           o que não estiver no extrato. <b>Informar saldo</b> corrige o saldo pelo valor real do app do banco, e a diferença é registrada como rendimento.</p>
-        <p><b>Devido × pago por mês:</b> quanto cada mês exigia de aporte e quanto já foi pago.</p>
+        <p><b>Devido × pago por mês:</b> cada mês mostra o saldo anterior (o que faltou dos meses anteriores), o fixo, os excedentes,
+          o total, o que foi aportado no mês e o que ainda falta. O que falta passa para o mês seguinte.</p>
       </>
     ),
   },
