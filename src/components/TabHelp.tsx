@@ -43,6 +43,10 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
           o app memoriza o estabelecimento para as próximas importações.</p>
         <p>Embaixo dos gastos <b>A identificar</b>, o app mostra uma dica do que provavelmente é (quando o nome dá alguma pista) e o link
           <b> 🔎 Pesquisar no Google</b>, que abre uma pesquisa com o nome do estabelecimento.</p>
+        <p><b>Dividir um gasto:</b> se a fatura cobrou o valor inteiro mas o gasto foi dividido com outras pessoas, toque nele e ligue
+          <b> Dividir este gasto com outras pessoas</b>. Informe a sua parte por número de pessoas, percentual ou valor fixo: só a sua parte
+          conta nos limites e nos aportes. Nas compras parceladas, as próximas parcelas entram com a mesma divisão, e um estorno
+          da compra é dividido na mesma proporção.</p>
         <p>Toque na descrição para editar ou excluir um lançamento. <b>+ Novo lançamento</b> serve para gastos que não vieram de fatura ou extrato.</p>
         <p className="muted">Valores negativos são estornos e abatem o total da categoria. Meses fechados não podem ser alterados: reabra o mês no Painel.</p>
       </>

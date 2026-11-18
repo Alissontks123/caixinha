@@ -399,3 +399,7 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 /* dica do que provavelmente é a despesa + link de pesquisa */
 .tx-hint { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
 .tx-hint a { color: var(--primary); font-weight: 600; white-space: nowrap; }
+
+/* divisão do gasto com outras pessoas */
+.split-box { border-top: 1px solid var(--border); padding-top: 12px; }
+.segmented.three { grid-template-columns: repeat(3, 1fr); }

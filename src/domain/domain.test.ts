@@ -1,4 +1,5 @@
 import { merchantHint, searchUrl } from './hints';
+import { myAmount, proportionalShare, shareOf } from './share';
 import { describe, expect, it } from 'vitest';
 import { parseMoney, formatMoney } from '../lib/money';
 import { addMonths, monthRange } from '../lib/months';
@@ -85,6 +86,20 @@ describe('resumo do mês', () => {
     expect(s.categories.find((c) => c.categoryId === 'hob')!.contribution).toBe(0);
     expect(s.ignoredTotal).toBe(R(13000));
     expect(s.totalDue).toBe(R(400)); // 300 fixo + 100
+  });
+  it('gasto dividido: só a parte do usuário conta no limite e no aporte', () => {
+    const input: SummaryInput = {
+      ...base,
+      transactions: [
+        { ...tx('a', 'ali', 900), share: { mode: 'people', people: 3 } }, // 300
+        { ...tx('b', 'ali', 400), share: { mode: 'fixed', cents: R(150) } }, // 150
+        { ...tx('c', 'ali', 200), share: { mode: 'percent', percent: 50 } }, // 100
+        { ...tx('d', 'ali', -60), share: { mode: 'percent', percent: 50 } }, // -30
+      ],
+    };
+    const ali = summarizeMonth('2026-10', input).categories.find((c) => c.categoryId === 'ali')!;
+    expect(ali.spent).toBe(R(520)); // 300 + 150 + 100 - 30
+    expect(ali.contribution).toBe(R(50)); // passou 20 → 1 bloco
   });
   it('categoria que não gera aporte nunca entra no cálculo', () => {
     const nec: Category = { id: 'nec', name: 'Gastos necessários', kind: 'normal', order: 2, color: '#000' };
@@ -295,5 +310,22 @@ describe('merchantHint (dica do que é a despesa)', () => {
   });
   it('monta a pesquisa sem a parcela', () => {
     expect(searchUrl('Force One Academia - Parcela 2/3')).toBe('https://www.google.com/search?q=Force%20One%20Academia');
+  });
+});
+
+describe('divisão do gasto (minha parte)', () => {
+  it('calcula a parte por pessoas, percentual e valor fixo', () => {
+    expect(shareOf(30000, { mode: 'people', people: 3 })).toBe(10000);
+    expect(shareOf(1000, { mode: 'people', people: 3 })).toBe(333);
+    expect(shareOf(30000, { mode: 'percent', percent: 25 })).toBe(7500);
+    expect(shareOf(30000, { mode: 'fixed', cents: 12000 })).toBe(12000);
+    expect(shareOf(30000, { mode: 'fixed', cents: 99999 })).toBe(30000); // nunca mais que o total
+    expect(shareOf(-3000, { mode: 'people', people: 3 })).toBe(-1000); // estorno continua negativo
+    expect(myAmount({ amount: 5000 })).toBe(5000); // sem divisão
+  });
+  it('estorno de compra com valor fixo vira a mesma proporção', () => {
+    const share = proportionalShare({ amount: 30000, share: { mode: 'fixed', cents: 10000 } });
+    expect(share?.mode).toBe('percent');
+    expect(shareOf(-3000, share)).toBe(-1000);
   });
 });

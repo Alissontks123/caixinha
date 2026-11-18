@@ -1,3 +1,4 @@
+import { installmentNumber, sameInstallmentPurchase } from '../domain/share';
 import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES, UNIDENTIFIED_ID, db } from './db';
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
@@ -73,13 +74,31 @@ export async function saveTransaction(
     const old = await db.transactions.get(data.id);
     if (old) await assertMonthOpen(old.month);
   }
+  const old = data.id ? await db.transactions.get(data.id) : undefined;
+  // mantém os dados da importação (fingerprint, cartão, parcela…) que o formulário não edita
   const tx: Transaction = {
+    ...old,
     ...data,
     id: data.id ?? uid(),
     month: data.month ?? monthOf(data.date),
-    createdAt: data.id ? ((await db.transactions.get(data.id))?.createdAt ?? Date.now()) : Date.now(),
+    createdAt: old?.createdAt ?? Date.now(),
   };
-  await db.transactions.put(tx);
+  if (!tx.share) delete tx.share;
+  await db.transaction('rw', [db.transactions, db.closings], async () => {
+    await db.transactions.put(tx);
+    // dividiu (ou deixou de dividir) uma parcela: as parcelas seguintes já importadas seguem a mesma divisão
+    if (tx.installment && JSON.stringify(old?.share) !== JSON.stringify(tx.share)) {
+      const closed = new Set((await db.closings.toArray()).map((c) => c.month));
+      const n = installmentNumber(tx.installment);
+      const later = (await db.transactions.where({ matchKey: tx.matchKey ?? '' }).toArray())
+        .filter((t) => t.id !== tx.id && !closed.has(t.month) && installmentNumber(t.installment) > n && sameInstallmentPurchase(tx, t));
+      for (const t of later) {
+        const next = { ...t, share: tx.share };
+        if (!next.share) delete next.share;
+        await db.transactions.put(next);
+      }
+    }
+  });
 }
 
 export async function setTransactionCategory(id: string, categoryId: string) {
@@ -166,6 +185,7 @@ export async function saveImport(
       learnable: r.learnable,
       cardLast4: it.card?.last4,
       installment: it.installment ? `${it.installment.n}/${it.installment.total}` : undefined,
+      share: r.share,
     });
     // memoriza só o que o usuário escolheu ou corrigiu (o que a regra automática já acerta não precisa)
     const userChose = choices.has(r.index) && choices.get(r.index) !== r.categoryId;

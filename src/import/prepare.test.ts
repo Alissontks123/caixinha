@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { matchKeyOf, suggestCategory } from '../domain/categorize';
-import type { Category } from '../domain/types';
+import type { Category, Transaction } from '../domain/types';
 import { fingerprintsOf, prepareReview, resolveCategory, type PrepareContext } from './prepare';
 import type { ParsedDocument, ParsedItem } from './types';
 
@@ -102,6 +102,27 @@ describe('revisão da importação', () => {
     const choices = new Map([[2, 'ali']]);
     expect(resolveCategory(r, choices, 3)).toBe('ali');
     expect(resolveCategory(r, choices, 1)).toBe('nec');
+  });
+
+  it('parcela seguinte e estorno de compra dividida herdam a divisão', () => {
+    const card = { last4: '1111', holder: 'A' };
+    const prev: Transaction[] = [
+      { id: 't1', date: '2026-09-05', month: '2026-09', description: 'LOJA X - Parcela 1/3', amount: 9000, categoryId: 'ali',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('LOJA X'), cardLast4: '1111', installment: '1/3',
+        share: { mode: 'fixed', cents: 3000 } },
+      { id: 't2', date: '2026-09-20', month: '2026-09', description: 'RESTAURANTE Y', amount: 12000, categoryId: 'ali',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('RESTAURANTE Y'), cardLast4: '1111', share: { mode: 'people', people: 4 } },
+    ];
+    const d = doc([
+      item({ description: 'LOJA X - Parcela 2/3', matchText: 'LOJA X', amount: 9000, card, installment: { n: 2, total: 3 } }),
+      item({ description: 'LOJA Z - Parcela 2/3', matchText: 'LOJA Z', amount: 9000, card, installment: { n: 2, total: 3 } }),
+      item({ description: 'Estorno RESTAURANTE Y', amount: -12000, kind: 'estorno', card }),
+    ]);
+    const r = prepareReview(d, ctx({ transactions: prev }));
+    expect(r[0].share).toEqual({ mode: 'fixed', cents: 3000 });
+    expect(r[0].reason).toMatch(/parcela 1\/3/);
+    expect(r[1].share).toBeUndefined(); // outra compra
+    expect(r[2].share).toEqual({ mode: 'people', people: 4 });
   });
 
   it('marca duplicados, mês fechado, ignorados e cartões de outra pessoa', () => {

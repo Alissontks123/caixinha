@@ -87,17 +87,18 @@ export async function reportToPdf(r: Report): Promise<Blob> {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('Nenhum lançamento no período.', margin, y); y += 20;
   } else {
     table(
-      ['Data', 'Conta em', 'Descrição', 'Categoria', 'Origem', 'Valor'],
+      ['Data', 'Conta em', 'Descrição', 'Categoria', 'Origem', 'Total (dividido)', 'Valor'],
       r.transactions.map((t) => [
         dateLabel(t.date),
         monthShort(t.month),
         t.description + (t.installment ? ` - parcela ${t.installment}` : ''),
         t.category,
         t.source + (t.card ? ` final ${t.card}` : ''),
+        t.total !== undefined ? formatMoney(t.total) : '',
         formatMoney(t.amount),
       ]),
-      [5],
-      { foot: ['Total', '', '', '', '', formatMoney(sum(r.transactions.map((t) => t.amount)))] },
+      [5, 6],
+      { foot: ['Total', '', '', '', '', '', formatMoney(sum(r.transactions.map((t) => t.amount)))] },
     );
   }
 

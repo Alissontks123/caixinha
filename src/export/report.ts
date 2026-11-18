@@ -1,3 +1,4 @@
+import { myAmount } from '../domain/share';
 import { computeLedger, type MonthLedger } from '../domain/ledger';
 import { summarizeMonth, type MonthSummary } from '../domain/summary';
 import type { CaixinhaMovement, Cents, ISODate, Month } from '../domain/types';
@@ -15,7 +16,10 @@ export interface ReportTransaction {
   month: Month;
   description: string;
   category: string;
+  /** Parte do usuário. */
   amount: Cents;
+  /** Valor total da fatura, só quando o gasto foi dividido. */
+  total?: Cents;
   source: string;
   installment?: string;
   card?: string;
@@ -61,7 +65,7 @@ export function buildReport(data: ReadyData, from: Month, to: Month, today: ISOD
     .sort((a, b) => a.month.localeCompare(b.month) || a.date.localeCompare(b.date))
     .map((t) => ({
       date: t.date, month: t.month, description: t.description, category: catName.get(t.categoryId) ?? '—',
-      amount: t.amount, source: SOURCE[t.source] ?? t.source, installment: t.installment, card: t.cardLast4,
+      amount: myAmount(t), total: t.share ? t.amount : undefined, source: SOURCE[t.source] ?? t.source, installment: t.installment, card: t.cardLast4,
     }));
   const movements = data.movements
     .filter((m) => !m.deleted && inRange(m.date.slice(0, 7)))

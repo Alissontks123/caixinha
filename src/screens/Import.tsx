@@ -11,6 +11,7 @@ import { PdfPasswordError, type ParsedDocument } from '../import/types';
 import { formatMoney } from '../lib/money';
 import { dateLabel, monthLabel } from '../lib/months';
 import { MerchantHint } from '../components/MerchantHint';
+import { shareOf } from '../domain/share';
 import { summaryInput, type ReadyData } from '../useAppData';
 
 type Phase =
@@ -290,6 +291,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel }: {
       it.installment && `parcela ${it.installment.n}/${it.installment.total}`,
       it.card && `final ${it.card.last4}`,
       it.month !== it.date.slice(0, 7) && `conta em ${monthLabel(it.month)}`,
+      r.share && `total ${formatMoney(it.amount)}`,
     ].filter(Boolean).join(' · ');
     return (
       <div key={r.index} className={`tx-row ${editable && !value ? 'needs' : ''}`}>
@@ -298,7 +300,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel }: {
           <span className="tx-meta muted small">{meta}</span>
           {(r.reason || it.ignoreReason) && <span className="tx-meta muted small">{it.ignoreReason ?? r.reason}</span>}
         </div>
-        <span className={`tx-amount ${it.amount < 0 ? 'refund' : ''}`}>{formatMoney(it.amount)}</span>
+        <span className={`tx-amount ${it.amount < 0 ? 'refund' : ''}`}>{formatMoney(shareOf(it.amount, r.share))}</span>
         {editable && (
           <select className="cat-select" aria-label={`Categoria de ${it.description}`} value={value} onChange={(e) => choose(r, e.target.value)}>
             {!value && <option value="">Escolha a categoria…</option>}

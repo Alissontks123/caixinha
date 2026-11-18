@@ -4,7 +4,8 @@ import { ErrorBox, Field, Modal, MoneyInput, Toast, useAction } from '../compone
 import { UNIDENTIFIED_ID } from '../db/db';
 import { deleteTransaction, saveTransaction, setTransactionCategory } from '../db/repo';
 import { alertsForChange, describeAlert } from '../domain/alerts';
-import type { Category, Month, Transaction } from '../domain/types';
+import { describeShare, myAmount, shareOf } from '../domain/share';
+import type { Category, Month, Share, Transaction } from '../domain/types';
 import { centsToInput, formatMoney, parseMoney } from '../lib/money';
 import { currentMonth, dateLabel, monthOf, todayISO } from '../lib/months';
 import { summaryInput, type ReadyData } from '../useAppData';
@@ -42,7 +43,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
     .filter((t) => t.month === month)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const list = filter ? all.filter((t) => t.categoryId === filter) : all;
-  const total = list.reduce((s, t) => s + t.amount, 0);
+  const total = list.reduce((s, t) => s + myAmount(t), 0);
 
   const counts = new Map<string, number>();
   for (const t of all) counts.set(t.categoryId, (counts.get(t.categoryId) ?? 0) + 1);
@@ -94,11 +95,12 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                             t.installment && `parcela ${t.installment}`,
                             t.cardLast4 && `final ${t.cardLast4}`,
                             t.date.slice(0, 7) !== t.month && `compra em ${dateLabel(t.date)}`,
+                            t.share && `dividido · total ${formatMoney(t.amount)}`,
                             t.note,
                           ].filter(Boolean).join(' · ')}
                         </span>
                       </button>
-                      <span className={`tx-amount ${t.amount < 0 ? 'refund' : ''}`}>{formatMoney(t.amount)}</span>
+                      <span className={`tx-amount ${t.amount < 0 ? 'refund' : ''}`}>{formatMoney(myAmount(t))}</span>
                       <CategorySelect
                         categories={data.categories}
                         value={t.categoryId}
@@ -174,6 +176,7 @@ function TransactionForm({
     initial?.categoryId ?? defaultCategory ?? categories.find((c) => c.kind === 'unidentified')?.id ?? categories[0]?.id,
   );
   const [note, setNote] = useState(initial?.note ?? '');
+  const [split, setSplit] = useState<SplitDraft>(() => splitDraftOf(initial?.share));
   const { error, setError, run } = useAction();
 
   const submit = async (e: React.FormEvent) => {
@@ -182,6 +185,8 @@ function TransactionForm({
     if (!date) return setError('Informe a data.');
     if (!description.trim()) return setError('Informe a descrição.');
     if (cents === null || cents <= 0) return setError('Informe um valor maior que zero.');
+    const share = parseSplit(split, cents);
+    if (typeof share === 'string') return setError(share);
     const draft = {
       id: initial?.id,
       date,
@@ -192,6 +197,7 @@ function TransactionForm({
       categoryId,
       source: initial?.source ?? 'manual',
       note: note.trim() || undefined,
+      share,
     };
     const ok = await run(() => saveTransaction(draft));
     if (ok) {
@@ -227,6 +233,7 @@ function TransactionForm({
         <Field label="Observação (opcional)">
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
+        <SplitFields value={split} onChange={setSplit} total={parseMoney(amount)} installment={initial?.installment} />
         {isRefund && <p className="muted small">Estornos abatem o total da categoria escolhida.</p>}
         <ErrorBox error={error} />
         <div className="row-end">
@@ -235,5 +242,92 @@ function TransactionForm({
         </div>
       </form>
     </Modal>
+  );
+}
+
+// ---------- divisão do gasto com outras pessoas ----------
+
+interface SplitDraft {
+  on: boolean;
+  mode: Share['mode'];
+  /** Texto digitado: valor (fixo), porcentagem ou número de pessoas. */
+  value: string;
+}
+
+function splitDraftOf(share: Share | undefined): SplitDraft {
+  if (!share) return { on: false, mode: 'people', value: '2' };
+  if (share.mode === 'fixed') return { on: true, mode: 'fixed', value: centsToInput(share.cents) };
+  if (share.mode === 'percent') return { on: true, mode: 'percent', value: String(Number(share.percent.toFixed(2))).replace('.', ',') };
+  return { on: true, mode: 'people', value: String(share.people) };
+}
+
+/** Converte o rascunho na divisão (ou undefined se não dividido). Retorna mensagem de erro (string) se inválido. */
+function parseSplit(d: SplitDraft, total: number): Share | undefined | string {
+  if (!d.on) return undefined;
+  if (d.mode === 'fixed') {
+    const c = parseMoney(d.value);
+    if (c === null || c <= 0) return 'Informe o valor da sua parte.';
+    if (c > total) return 'A sua parte não pode ser maior que o valor total.';
+    return { mode: 'fixed', cents: c };
+  }
+  if (d.mode === 'percent') {
+    const p = Number(d.value.replace(',', '.'));
+    if (!Number.isFinite(p) || p <= 0 || p > 100) return 'A porcentagem da sua parte deve estar entre 0 e 100.';
+    return { mode: 'percent', percent: p };
+  }
+  const n = Number(d.value);
+  if (!Number.isInteger(n) || n < 2) return 'Informe quantas pessoas dividem o gasto (2 ou mais, contando você).';
+  return { mode: 'people', people: n };
+}
+
+const SPLIT_MODES: { id: Share['mode']; label: string }[] = [
+  { id: 'people', label: 'Por pessoas' },
+  { id: 'percent', label: 'Percentual' },
+  { id: 'fixed', label: 'Valor fixo' },
+];
+
+function SplitFields({ value, onChange, total, installment }: {
+  value: SplitDraft; onChange: (v: SplitDraft) => void; total: number | null; installment?: string;
+}) {
+  const set = (patch: Partial<SplitDraft>) => onChange({ ...value, ...patch });
+  const share = total && total > 0 ? parseSplit(value, total) : undefined;
+  return (
+    <div className="split-box stack-sm">
+      <label className="switch-row">
+        <input type="checkbox" checked={value.on} onChange={(e) => set({ on: e.target.checked })} />
+        <span className="switch" aria-hidden />
+        <span>Dividir este gasto com outras pessoas</span>
+      </label>
+      {value.on && (
+        <>
+          <div className="segmented three">
+            {SPLIT_MODES.map((m) => (
+              <button key={m.id} type="button" className={value.mode === m.id ? 'active' : ''}
+                onClick={() => set({ mode: m.id, value: m.id === 'people' ? '2' : '' })}>{m.label}</button>
+            ))}
+          </div>
+          {value.mode === 'people' && (
+            <Field label="Quantas pessoas dividem (contando você)?">
+              <input type="number" inputMode="numeric" min={2} step={1} value={value.value} onChange={(e) => set({ value: e.target.value })} />
+            </Field>
+          )}
+          {value.mode === 'percent' && (
+            <Field label="Sua parte (%)">
+              <input inputMode="decimal" placeholder="Ex.: 50" value={value.value} onChange={(e) => set({ value: e.target.value })} />
+            </Field>
+          )}
+          {value.mode === 'fixed' && (
+            <Field label="Sua parte (R$)"><MoneyInput value={value.value} onChange={(v) => set({ value: v })} /></Field>
+          )}
+          {share && typeof share !== 'string' && total ? (
+            <p className="ok-box small">
+              Sua parte: <b>{formatMoney(shareOf(total, share))}</b> de {formatMoney(total)} ({describeShare(share, formatMoney)}).
+              Só a sua parte conta nos limites e nos aportes.
+            </p>
+          ) : null}
+          {installment && <p className="muted small">As próximas parcelas desta compra também serão divididas assim.</p>}
+        </>
+      )}
+    </div>
   );
 }

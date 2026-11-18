@@ -64,7 +64,15 @@ export interface Transaction {
   cardLast4?: string;
   /** Ex.: "5/12". */
   installment?: string;
+  /** Gasto dividido com outras pessoas: só a parte do usuário conta (ver `myAmount`). */
+  share?: Share;
 }
+
+/** Como o gasto foi dividido. Os valores sempre descrevem a parte do usuário. */
+export type Share =
+  | { mode: 'fixed'; cents: Cents }
+  | { mode: 'percent'; percent: number }
+  | { mode: 'people'; people: number };
 
 /** Categoria memorizada para um estabelecimento. */
 export interface LearnedRule {

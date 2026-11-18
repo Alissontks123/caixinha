@@ -91,9 +91,13 @@ export function reportToXlsx(r: Report): Uint8Array {
       columns: [
         { header: 'Data', width: 12 }, { header: 'Mês', width: 10 }, { header: 'Descrição', width: 36 },
         { header: 'Categoria', width: 22 }, { header: 'Valor', width: 14, type: 'money' },
+        { header: 'Total (dividido)', width: 16, type: 'money' },
         { header: 'Origem', width: 16 }, { header: 'Parcela', width: 9 }, { header: 'Cartão', width: 9 },
       ],
-      rows: r.transactions.map((t) => [dateLabel(t.date), monthShort(t.month), t.description, t.category, reais(t.amount), t.source, t.installment, t.card]),
+      rows: r.transactions.map((t) => [
+        dateLabel(t.date), monthShort(t.month), t.description, t.category, reais(t.amount),
+        t.total !== undefined ? reais(t.total) : undefined, t.source, t.installment, t.card,
+      ]),
     },
     {
       name: 'Caixinha',

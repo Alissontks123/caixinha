@@ -1,5 +1,6 @@
 import { matchKeyOf, normalizeText, suggestCategory } from '../domain/categorize';
-import type { CaixinhaMovement, Category, ISODate, KnownCard, Month, Transaction } from '../domain/types';
+import { installmentNumber, proportionalShare, sameInstallmentPurchase } from '../domain/share';
+import type { CaixinhaMovement, Category, ISODate, KnownCard, Month, Share, Transaction } from '../domain/types';
 import type { ParsedDocument, ParsedItem } from './types';
 
 export type ReviewStatus =
@@ -32,6 +33,8 @@ export interface ReviewItem {
   fromLearned?: boolean;
   /** Movimento manual da caixinha (mesma data, tipo e valor) que será substituído por este. */
   replacesManualId?: string;
+  /** Divisão herdada (parcela seguinte de uma compra dividida, ou estorno de uma compra dividida). */
+  share?: Share;
 }
 
 export interface PrepareContext {
@@ -130,6 +133,10 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
         r.categoryId = previous.categoryId;
         r.reason = `Estorno de "${previous.description}" (${previous.date.split('-').reverse().join('/')})`;
       }
+      if (previous?.share) {
+        r.share = proportionalShare(previous);
+        r.reason = [r.reason, 'dividido na mesma proporção da compra'].filter(Boolean).join(' · ');
+      }
       continue;
     }
 
@@ -150,6 +157,20 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
       r.learnable = s.learnable;
     } else {
       r.learnable = true;
+    }
+  }
+
+  // parcelas seguintes de uma compra que o usuário dividiu entram com a mesma divisão
+  for (const r of active) {
+    const inst = r.item.installment;
+    if (!inst || r.item.kind === 'estorno') continue;
+    const me = { matchKey: r.matchKey, amount: r.item.amount, cardLast4: r.item.card?.last4, installment: `${inst.n}/${inst.total}`, source: doc.source };
+    const previous = ctx.transactions
+      .filter((t) => t.share && installmentNumber(t.installment) < inst.n && sameInstallmentPurchase(me, t))
+      .sort((a, b) => installmentNumber(b.installment) - installmentNumber(a.installment))[0];
+    if (previous) {
+      r.share = previous.share;
+      r.reason = [r.reason, `dividido como a parcela ${previous.installment}`].filter(Boolean).join(' · ');
     }
   }
   return review;
