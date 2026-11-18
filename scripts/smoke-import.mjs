@@ -26,7 +26,7 @@ await page.getByLabel('Data do saldo').fill('2026-09-30');
 await page.getByLabel('Saldo total da caixinha nessa data').fill('1000');
 await page.getByLabel('Aporte fixo mensal').fill('300');
 await page.getByRole('button', { name: 'Começar' }).click();
-await page.getByText('Aporte previsto no mês').waitFor();
+await page.getByText('Aportes necessários no mês').waitFor();
 
 const goImport = () => page.getByRole('button', { name: /Importar$/ }).click();
 const pick = (file) => page.locator('input[type=file]').setInputFiles(ex(file));
@@ -100,7 +100,7 @@ log('Extrato resultado:', (await page.locator('.plain-list').innerText()).replac
 // 5) Painel de outubro
 await page.getByRole('button', { name: 'Ver lançamentos' }).click();
 await page.getByRole('button', { name: /Painel/ }).click();
-await page.getByText(/Aporte previsto no mês|Aporte devido/).waitFor();
+await page.getByText('Aportes necessários no mês').waitFor();
 log('Painel:', (await page.locator('.month-picker-label').innerText()), '|', (await page.locator('.hero').innerText()).replace(/\n+/g, ' | '));
 log('Categorias:', (await page.locator('.cat-card .cat-head, .cat-card .cat-values').allInnerTexts()).join(' ; ').replace(/\n/g, ' '));
 await shot('24-painel', true);
@@ -144,7 +144,7 @@ for (let i = 0; i < 24; i++) {
   if (label === 'outubro de 2026') break;
   await page.getByLabel(label.startsWith('novembro') || label.startsWith('dezembro') ? 'Mês anterior' : 'Próximo mês').click();
 }
-await page.getByText(/Aporte previsto no mês|Aporte devido/).waitFor();
+await page.getByText('Aportes necessários no mês').waitFor();
 log('Alertas outubro:', (await page.locator('.alert-banner').allInnerTexts()).map((t) => t.replace(/\n+/g, ' | ')).join(' ## '));
 await shot('28-painel-alertas');
 

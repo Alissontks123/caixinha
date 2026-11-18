@@ -370,3 +370,19 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
   .modal-backdrop { align-items: center; }
   .modal { border-radius: 18px; }
 }
+
+/* botão "?" de ajuda de cada aba */
+.topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.help-btn {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; padding: 0;
+  border: 1.5px solid var(--primary); background: var(--surface); color: var(--primary);
+  font-weight: 700; font-size: 0.95rem; line-height: 1; cursor: pointer;
+}
+.help-btn:hover { background: var(--primary-soft); }
+.help-modal { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; line-height: 1.45; }
+.help-modal p { margin: 0; }
+
+/* frase da regra da categoria, com os campos no meio do texto */
+.rule-sentence { margin: 0; line-height: 2.6; }
+.rule-sentence .money-input { display: inline-flex; vertical-align: middle; width: 128px; line-height: normal; }
+.rule-sentence .money-input input { width: 100%; min-width: 0; }

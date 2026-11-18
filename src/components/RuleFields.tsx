@@ -1,5 +1,5 @@
 import { parseMoney } from '../lib/money';
-import { Field, MoneyInput } from './ui';
+import { MoneyInput } from './ui';
 import type { RuleValues } from '../db/repo';
 
 /** Estado de edição de uma regra (textos digitados). */
@@ -10,7 +10,10 @@ export interface RuleDraft {
   blockAmount: string;
 }
 
-export function RuleFields({ value, onChange }: { value: RuleDraft; onChange: (v: RuleDraft) => void }) {
+export function RuleFields({ value, onChange, categoryName }: {
+  value: RuleDraft; onChange: (v: RuleDraft) => void; categoryName?: string;
+}) {
+  const name = categoryName?.trim() || 'esta categoria';
   const set = (patch: Partial<RuleDraft>) => onChange({ ...value, ...patch });
   return (
     <div className="stack-sm">
@@ -20,11 +23,15 @@ export function RuleFields({ value, onChange }: { value: RuleDraft; onChange: (v
         <span>Gera aporte na caixinha</span>
       </label>
       {value.contributes ? (
-        <div className="grid-3">
-          <Field label="Limite"><MoneyInput value={value.limit} onChange={(v) => set({ limit: v })} /></Field>
-          <Field label="A cada X"><MoneyInput value={value.blockSize} onChange={(v) => set({ blockSize: v })} /></Field>
-          <Field label="Aportar Y"><MoneyInput value={value.blockAmount} onChange={(v) => set({ blockAmount: v })} /></Field>
-        </div>
+        <p className="rule-sentence">
+          O limite de gastos mensal com <b>{name}</b> será de{' '}
+          <MoneyInput value={value.limit} onChange={(v) => set({ limit: v })} ariaLabel={`Limite mensal de ${name}`} />.
+          {' '}Quando ultrapassado, a cada{' '}
+          <MoneyInput value={value.blockSize} onChange={(v) => set({ blockSize: v })} ariaLabel="Valor de cada bloco de gastos excedentes" />
+          {' '}gastos, deverá ser aportado{' '}
+          <MoneyInput value={value.blockAmount} onChange={(v) => set({ blockAmount: v })} ariaLabel="Valor do aporte por bloco" />
+          {' '}na caixinha.
+        </p>
       ) : (
         <p className="muted small">Sem limite: só mostra o total gasto no mês, nunca gera aporte.</p>
       )}
@@ -37,7 +44,7 @@ export function parseRuleDraft(d: RuleDraft): RuleValues | string {
   if (!d.contributes) return { contributes: false, limit: 0, blockSize: 0, blockAmount: 0 };
   const limit = parseMoney(d.limit), blockSize = parseMoney(d.blockSize), blockAmount = parseMoney(d.blockAmount);
   if (limit === null || limit < 0) return 'Informe o limite (pode ser 0).';
-  if (blockSize === null || blockSize <= 0) return 'O X precisa ser maior que zero.';
-  if (blockAmount === null || blockAmount < 0) return 'Informe o Y (pode ser 0).';
+  if (blockSize === null || blockSize <= 0) return 'O valor de "a cada" precisa ser maior que zero.';
+  if (blockAmount === null || blockAmount < 0) return 'Informe o valor a ser aportado (pode ser 0).';
   return { contributes: true, limit, blockSize, blockAmount };
 }

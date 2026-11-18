@@ -83,11 +83,11 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
             {summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}
           </span>
         </div>
-        <p className="hero-label">{summary.closed ? 'Aporte devido no mês' : 'Aporte previsto no mês'}</p>
+        <p className="hero-label">Aportes necessários no mês</p>
         <p className="hero-value">{formatMoney(summary.totalDue)}</p>
         <div className="hero-split">
           <div><span className="muted">Fixo</span><b>{formatMoney(summary.fixed)}</b></div>
-          <div><span className="muted">Por estouro</span><b>{formatMoney(summary.overflowTotal)}</b></div>
+          <div><span className="muted">Por gastos excedentes</span><b>{formatMoney(summary.overflowTotal)}</b></div>
         </div>
       </section>
 
@@ -128,12 +128,19 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
                 <span className="muted"> de {formatMoney(c.limit)}</span>
               </div>
               <ProgressBar ratio={ratio} color={c.color} alert={alert} />
-              <p className="cat-foot muted small">
-                {over
-                  ? `Passou ${formatMoney(c.spent - c.limit)} · ${blocks} bloco(s) de ${formatMoney(c.blockSize)}. ` +
-                    `${room === 0 ? 'Qualquer gasto a mais' : `Mais ${formatMoney(room)}`} e o aporte sobe para ${formatMoney((blocks + 1) * c.blockAmount)}.`
-                  : `Restam ${formatMoney(room)} · acima disso, ${formatMoney(c.blockAmount)} a cada ${formatMoney(c.blockSize)}.`}
-              </p>
+              {over ? (
+                <>
+                  <p className="cat-foot small">
+                    Você excedeu o total de <b>{formatMoney(c.spent - c.limit)}</b>, gerando a necessidade de um aporte na caixinha de{' '}
+                    <b>{formatMoney(c.contribution)}</b>.
+                  </p>
+                  <p className="cat-foot muted small">
+                    {room === 0 ? 'Qualquer gasto a mais faz o aporte subir' : `Se gastar mais ${formatMoney(room)}, o aporte sobe`} para {formatMoney((blocks + 1) * c.blockAmount)}.
+                  </p>
+                </>
+              ) : (
+                <p className="cat-foot muted small">Você ainda pode gastar <b>{formatMoney(c.limit - c.spent)}</b> neste mês.</p>
+              )}
             </button>
           );
         })}

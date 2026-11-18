@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFields';
 import { statusText } from '../components/SyncPanel';
+import { HelpButton } from '../components/TabHelp';
 import { connect, useSyncState } from '../sync/engine';
 import { ErrorBox, Field, MoneyInput, useAction } from '../components/ui';
 import { CATEGORY_COLORS, SPECIAL_CATEGORIES } from '../db/db';
@@ -85,7 +86,10 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
   return (
     <div className="setup">
       <header className="setup-head">
-        <h1>Bem-vindo(a)!</h1>
+        <div className="row-between">
+          <h1>Bem-vindo(a)!</h1>
+          <HelpButton topic="setup" />
+        </div>
         <p>Vamos configurar seu controle de gastos. Tudo pode ser alterado depois em <b>Ajustes</b>.</p>
         <button type="button" className="link-btn" onClick={onHelp}>Como instalar e usar o app</button>
       </header>
@@ -109,16 +113,16 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
         </section>
 
         <section className="card stack">
-          <h2>Caixinha Nubank</h2>
+          <h2>Saldo inicial da Caixinha Nubank</h2>
           <div className="grid-2">
-            <Field label="Data do saldo" hint="Saldo ao final deste dia. Dica: use o último dia do mês anterior.">
+            <Field label="Data do saldo" hint="Saldo ao final deste dia. Dica: use o último dia do mês anterior, pois o sistema contará os aportes da caixinha com base nos extratos a partir dessa data.">
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </Field>
             <Field label="Saldo total da caixinha nessa data">
               <MoneyInput value={startBalance} onChange={setStartBalance} />
             </Field>
           </div>
-          <Field label="Aporte fixo mensal" hint={`Devido todo mês, a partir de ${monthLabel(startMonth)}, independente dos gastos.`}>
+          <Field label="Aporte fixo mensal da caixinha" hint={`Valor que deverá ser aplicado na caixinha todo mês, independente dos gastos (a partir de ${monthLabel(startMonth)}).`}>
             <MoneyInput value={fixed} onChange={setFixed} />
           </Field>
         </section>
@@ -126,8 +130,8 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
         <section className="card stack">
           <h2>Categorias</h2>
           <p className="muted small">
-            Acima do <b>limite</b>, a cada <b>X</b> reais gastos a mais, você aporta <b>Y</b> na caixinha.
-            Bloco incompleto conta como inteiro.
+            Complete a frase de cada categoria. Os gastos excedentes contam em blocos, e um bloco incompleto conta como inteiro.
+            Exemplo: limite de R$ 500, a cada R$ 100 aportar R$ 50. Gastou R$ 650 → excedeu R$ 150 → 2 blocos → aporte de R$ 100.
           </p>
           {cats.map((c) => (
             <div key={c.key} className="rule-row">
@@ -147,7 +151,7 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
                 />
                 <button type="button" className="icon-btn" aria-label={`Remover ${c.name || 'categoria'}`} onClick={() => removeCat(c.key)}>×</button>
               </div>
-              <RuleFields value={c.rule} onChange={(rule) => updateCat(c.key, { rule })} />
+              <RuleFields value={c.rule} categoryName={c.name} onChange={(rule) => updateCat(c.key, { rule })} />
             </div>
           ))}
           <button type="button" className="btn ghost" onClick={addCat}>+ Adicionar categoria</button>

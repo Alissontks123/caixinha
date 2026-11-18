@@ -64,7 +64,7 @@ async function setup(page, name, txDesc) {
   await page.getByLabel('Saldo total da caixinha nessa data').fill('500');
   await page.getByLabel('Aporte fixo mensal').fill('200');
   await page.getByRole('button', { name: 'Começar' }).click();
-  await page.getByText('Aporte previsto no mês').waitFor();
+  await page.getByText('Aportes necessários no mês').waitFor();
   if (txDesc) await addTx(page, txDesc, '100');
 }
 
@@ -101,7 +101,7 @@ log('A conectado:', await syncStatus(A.page), '| arquivos no Drive:', drive.size
 // Aparelho B: novo, "Já uso em outro aparelho" → recebe tudo do Drive
 const B = await device(browser, 'B');
 await B.page.getByRole('button', { name: /Já uso em outro aparelho/ }).click();
-await B.page.getByText('Aporte previsto no mês').waitFor();
+await B.page.getByText('Aportes necessários no mês').waitFor();
 log('B recebeu:', await B.page.locator('.brand').innerText(), '|', await txList(B.page));
 
 // B lança algo → sincroniza sozinho em ~4s; A sincroniza e recebe

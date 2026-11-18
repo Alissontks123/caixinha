@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { addMonths, monthLabel } from '../lib/months';
 import { parseMoney } from '../lib/money';
 import type { Month } from '../domain/types';
@@ -25,19 +26,20 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
 
 /** Campo de valor em reais. Guarda o texto digitado e devolve centavos (ou null se inválido). */
 export function MoneyInput({
-  value, onChange, placeholder = '0,00', autoFocus,
-}: { value: string; onChange: (text: string) => void; placeholder?: string; autoFocus?: boolean }) {
+  value, onChange, placeholder = '0,00', autoFocus, ariaLabel,
+}: { value: string; onChange: (text: string) => void; placeholder?: string; autoFocus?: boolean; ariaLabel?: string }) {
   const invalid = value.trim() !== '' && parseMoney(value) === null;
   return (
-    <div className={`money-input ${invalid ? 'invalid' : ''}`}>
+    <span className={`money-input ${invalid ? 'invalid' : ''}`}>
       <span>R$</span>
-      <input inputMode="decimal" value={value} placeholder={placeholder} autoFocus={autoFocus} onChange={(e) => onChange(e.target.value)} />
-    </div>
+      <input inputMode="decimal" value={value} placeholder={placeholder} autoFocus={autoFocus} aria-label={ariaLabel} onChange={(e) => onChange(e.target.value)} />
+    </span>
   );
 }
 
+/** Janela sobre a tela. Vai direto para o <body> para não ficar presa dentro da barra do topo. */
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
@@ -46,7 +48,8 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

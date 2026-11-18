@@ -56,7 +56,7 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
 
       <section className="card stack-sm">
         <div className="row-between">
-          <h2>Aporte fixo mensal</h2>
+          <h2>Aporte fixo mensal da caixinha</h2>
           <button className="btn ghost small" onClick={() => setEditingFixed(true)}>Alterar</button>
         </div>
         <p className="big-number">{formatMoney(fixedNow?.amount ?? 0)}<span className="muted small"> / mês</span></p>
@@ -264,7 +264,7 @@ function CategoryForm({ data, category, onClose }: { data: Data; category?: Cate
           <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!category} /></Field>
           <Field label="Cor"><input type="color" value={color} onChange={(e) => setColor(e.target.value)} /></Field>
         </div>
-        <RuleFields value={rule} onChange={setRule} />
+        <RuleFields value={rule} categoryName={name} onChange={setRule} />
         <EffectiveMonth value={effective} onChange={setEffective} />
         {history.length > 1 && (
           <div>
@@ -323,9 +323,9 @@ function FixedForm({ current, onClose }: { current: number; onClose: () => void 
     if (await run(() => setFixedContribution(effective, cents))) onClose();
   };
   return (
-    <Modal title="Aporte fixo mensal" onClose={onClose}>
+    <Modal title="Aporte fixo mensal da caixinha" onClose={onClose}>
       <form className="stack" onSubmit={submit}>
-        <Field label="Valor por mês"><MoneyInput value={amount} onChange={setAmount} autoFocus /></Field>
+        <Field label="Valor por mês" hint="Valor que deverá ser aplicado na caixinha todo mês, independente dos gastos."><MoneyInput value={amount} onChange={setAmount} autoFocus /></Field>
         <EffectiveMonth value={effective} onChange={setEffective} />
         <ErrorBox error={error} />
         <div className="row-end"><button className="btn primary" type="submit">Salvar</button></div>
@@ -357,8 +357,8 @@ function ProfileForm({ profile, onClose }: { profile: Profile; onClose: () => vo
       <form className="stack" onSubmit={submit}>
         <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} /></Field>
         <div className="grid-2">
-          <Field label="Data do saldo inicial" hint="Saldo ao final deste dia."><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
-          <Field label="Saldo inicial"><MoneyInput value={startBalance} onChange={setStartBalance} /></Field>
+          <Field label="Data do saldo inicial" hint="Saldo ao final deste dia. Dica: use o último dia do mês anterior, pois o sistema contará os aportes da caixinha com base nos extratos a partir dessa data."><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
+          <Field label="Saldo inicial da Caixinha Nubank"><MoneyInput value={startBalance} onChange={setStartBalance} /></Field>
         </div>
         <Field label="Alertar quando a categoria atingir (% do limite)">
           <input type="number" min={1} max={100} value={threshold} onChange={(e) => setThreshold(e.target.value)} />

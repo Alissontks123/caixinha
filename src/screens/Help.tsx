@@ -63,10 +63,10 @@ export function Help({ onBack }: { onBack: () => void }) {
 
       <Item title="Como o aporte é calculado">
         <p className="small">
-          Cada categoria tem um <b>limite</b>. Acima dele, a cada <b>X</b> reais gastos a mais, você aporta <b>Y</b> na caixinha.
-          Um bloco incompleto conta como inteiro.
+          Cada categoria tem um <b>limite</b> de gastos mensal. Quando ultrapassado, os gastos excedentes contam em blocos, e cada bloco
+          gera um aporte na caixinha. Um bloco incompleto conta como inteiro.
         </p>
-        <p className="small">Exemplo: limite R$ 500, X = R$ 100, Y = R$ 50. Gastou R$ 650 → passou R$ 150 → 2 blocos → aporte de <b>R$ 100</b>.</p>
+        <p className="small">Exemplo: limite de R$ 500, a cada R$ 100 aportar R$ 50. Gastou R$ 650 → excedeu R$ 150 → 2 blocos → aporte de <b>R$ 100</b>.</p>
         <p className="small">Além disso, todo mês tem o <b>aporte fixo</b> definido em Ajustes. Categorias como "Gastos necessários" podem ficar sem limite e não geram aporte.</p>
       </Item>
 
