@@ -61,6 +61,18 @@ export default function App() {
             {tab !== 'ajuda' && <HelpButton topic={tab} />}
           </div>
         </div>
+        <nav className="tabbar">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className={tab === t.id ? 'active' : ''}
+              onClick={() => { if (t.id !== 'lancamentos') setFilter(undefined); go(t.id); }}
+            >
+              <span className="tab-icon" aria-hidden>{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
       </header>
       <main className="content">
         {tab === 'painel' && <Dashboard data={d} month={month} goToTransactions={goToTransactions} goToCaixinha={() => go('caixinha')} />}
@@ -71,18 +83,6 @@ export default function App() {
         {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
-      <nav className="tabbar">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={tab === t.id ? 'active' : ''}
-            onClick={() => { if (t.id !== 'lancamentos') setFilter(undefined); go(t.id); }}
-          >
-            <span className="tab-icon" aria-hidden>{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
-      </nav>
       <SyncChoiceModal />
     </div>
   );
