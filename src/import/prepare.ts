@@ -133,7 +133,7 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
       continue;
     }
 
-    if (it.kind === 'pix_pessoa') { r.reason = 'Pix para pessoa: sempre pergunta'; continue; }
+    if (it.kind === 'pix_pessoa') continue; // Pix para pessoa: sempre pergunta (sem aviso na tela)
     if (!it.matchText.trim()) continue;
 
     const s = suggestCategory(it.matchText, ctx.learned);
@@ -148,7 +148,6 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
       r.learnable = true;
     } else if (s.type === 'ask') {
       r.learnable = s.learnable;
-      if (!s.learnable) r.reason = 'Loja de vários produtos: sempre pergunta';
     } else {
       r.learnable = true;
     }
