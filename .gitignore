@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dev-dist/
+# Dados reais de exemplo (extratos/faturas) — NUNCA versionar
+exemplos/
+*.pdf
+scripts/shots/

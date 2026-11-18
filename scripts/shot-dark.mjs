@@ -1,0 +1,30 @@
+/** Captura o Histórico e o Painel em modo escuro, reaproveitando um backup gerado pelo smoke (dados no IndexedDB). */
+import { chromium } from 'playwright-core';
+const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: 'dark' });
+const page = await ctx.newPage();
+await page.goto('http://localhost:5199/');
+await page.getByLabel('Seu nome').fill('Teste');
+await page.getByLabel('Data do saldo').fill('2026-09-30');
+await page.getByLabel('Saldo total da caixinha nessa data').fill('1000');
+await page.getByLabel('Aporte fixo mensal').fill('300');
+await page.getByRole('button', { name: 'Começar' }).click();
+const add = async (d, v, date, cat) => {
+  await page.getByRole('button', { name: '+ Novo lançamento' }).click();
+  await page.getByLabel('Descrição').fill(d); await page.getByLabel('Valor').fill(v); await page.getByLabel('Data').fill(date);
+  await page.getByRole('dialog').getByLabel('Categoria').selectOption({ label: cat });
+  await page.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('dialog').waitFor({ state: 'detached' });
+};
+await page.getByRole('button', { name: /Gastos$/ }).click();
+await add('Mercado', '1.200', '2026-11-05', 'Alimentação');
+await add('Spotify', '40', '2026-11-06', 'Assinaturas');
+await add('Cinema', '420', '2026-11-07', 'Hobbys');
+await add('Luz', '300', '2026-11-08', 'Gastos necessários');
+await add('Restaurante', '500', '2026-10-08', 'Alimentação');
+await page.getByRole('button', { name: /Histórico/ }).click();
+await page.getByText('Evolução mensal por categoria').waitFor();
+await page.screenshot({ path: 'scripts/shots/40-historico-escuro.png', fullPage: true });
+await page.getByRole('button', { name: /Painel/ }).click();
+await page.screenshot({ path: 'scripts/shots/41-painel-escuro.png' });
+await browser.close();
