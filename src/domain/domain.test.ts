@@ -2,7 +2,7 @@ import { merchantHint, searchUrl } from './hints';
 import { myAmount, proportionalShare, shareOf } from './share';
 import { describe, expect, it } from 'vitest';
 import { parseMoney, formatMoney } from '../lib/money';
-import { addMonths, monthRange } from '../lib/months';
+import { addMonths, lastDay, monthRange } from '../lib/months';
 import { compareMonth, monthStatus } from './alerts';
 import { historyMonths } from './history';
 import { balanceByMonth, computeLedger, computeStatements, startMonthOf, type LedgerInput } from './ledger';
@@ -376,5 +376,19 @@ describe('divisão do gasto (minha parte)', () => {
     const share = proportionalShare({ amount: 30000, share: { mode: 'fixed', cents: 10000 } });
     expect(share?.mode).toBe('percent');
     expect(shareOf(-3000, share)).toBe(-1000);
+  });
+});
+
+describe('início da caixinha', () => {
+  it('fixo cadastrado depois vale desde o início antecipado', () => {
+    const versions = [{ id: 'f', effectiveMonth: '2026-11', amount: 30000 }];
+    expect(fixedForMonth(versions, '2026-10', '2026-10')).toBe(30000);
+    expect(fixedForMonth(versions, '2026-09', '2026-10')).toBe(0); // antes do início
+  });
+  it('último dia do mês', () => {
+    expect(lastDay('2026-09')).toBe('2026-09-30');
+    expect(lastDay('2026-02')).toBe('2026-02-28');
+    expect(lastDay('2026-12')).toBe('2026-12-31');
+    expect(startMonthOf({ caixinhaStartDate: lastDay('2026-09') })).toBe('2026-10');
   });
 });

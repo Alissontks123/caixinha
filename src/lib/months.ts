@@ -36,6 +36,12 @@ export function firstDay(month: Month): ISODate {
   return `${month}-01`;
 }
 
+/** Último dia do mês. */
+export function lastDay(month: Month): ISODate {
+  const [y, m] = month.split('-').map(Number);
+  return todayISO(new Date(y, m, 0));
+}
+
 const MONTHS = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',

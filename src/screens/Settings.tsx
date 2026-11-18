@@ -4,13 +4,14 @@ import {
   addCategory, deleteCategory, deleteFixedVersion, deleteLearnedRule, deleteRuleVersion, exportBackup, importBackup,
   moveCategory, setC6Password, setCardMine, setCategoryRule, setFixedContribution, updateCategory, updateProfile,
 } from '../db/repo';
-import { parseRuleDraft, RuleFields, StartDateHint, type RuleDraft } from '../components/RuleFields';
+import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFields';
 import { SyncSettings } from '../components/SyncPanel';
 import { UNIDENTIFIED_ID } from '../db/db';
 import { resolveVersion, ruleContributes, ruleForMonth } from '../domain/rules';
 import type { Category, CategoryRuleVersion, Month, Profile } from '../domain/types';
 import { centsToInput, formatMoney, parseMoney } from '../lib/money';
-import { currentMonth, monthLabel, todayISO } from '../lib/months';
+import { addMonths, currentMonth, lastDay, monthLabel, todayISO } from '../lib/months';
+import { startMonthOf } from '../domain/ledger';
 import type { AppData } from '../useAppData';
 
 type Data = AppData & { profile: Profile };
@@ -19,6 +20,7 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
   const [editingCat, setEditingCat] = useState<Category | 'new' | null>(null);
   const [editingFixed, setEditingFixed] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editingStart, setEditingStart] = useState(false);
   const { error, run } = useAction();
   const month = currentMonth();
   const fixedNow = resolveVersion(data.fixedVersions, month);
@@ -44,14 +46,25 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
     <div className="stack">
       <section className="card stack-sm">
         <div className="row-between">
-          <h2>Perfil e caixinha</h2>
+          <h2>Perfil</h2>
           <button className="btn ghost small" onClick={() => setEditingProfile(true)}>Editar</button>
         </div>
         <dl className="kv">
           <dt>Nome</dt><dd>{data.profile.name}</dd>
-          <dt>Saldo inicial</dt><dd>{formatMoney(data.profile.caixinhaStartBalance)} em {data.profile.caixinhaStartDate.split('-').reverse().join('/')}</dd>
           <dt>Alerta de limite</dt><dd>a partir de {data.profile.alertThreshold}% do limite</dd>
         </dl>
+      </section>
+
+      <section className="card stack-sm">
+        <div className="row-between">
+          <h2>Início da caixinha</h2>
+          <button className="btn ghost small" onClick={() => setEditingStart(true)}>Alterar</button>
+        </div>
+        <p>A caixinha conta a partir de <b>{monthLabel(startMonthOf(data.profile))}</b>.</p>
+        <p className="muted small">
+          Saldo inicial: {formatMoney(data.profile.caixinhaStartBalance)} em {data.profile.caixinhaStartDate.split('-').reverse().join('/')}.
+          Os meses anteriores ao início não entram na conta dos aportes. A partir dele, o que faltar aportar num mês passa para o seguinte.
+        </p>
       </section>
 
       <section className="card stack-sm">
@@ -122,6 +135,7 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
       )}
       {editingFixed && <FixedForm current={fixedNow?.amount ?? 0} onClose={() => setEditingFixed(false)} />}
       {editingProfile && <ProfileForm profile={data.profile} onClose={() => setEditingProfile(false)} />}
+      {editingStart && <StartForm profile={data.profile} onClose={() => setEditingStart(false)} />}
     </div>
   );
 }
@@ -336,34 +350,66 @@ function FixedForm({ current, onClose }: { current: number; onClose: () => void 
 
 function ProfileForm({ profile, onClose }: { profile: Profile; onClose: () => void }) {
   const [name, setName] = useState(profile.name);
-  const [startDate, setStartDate] = useState(profile.caixinhaStartDate);
-  const [startBalance, setStartBalance] = useState(centsToInput(profile.caixinhaStartBalance));
   const [threshold, setThreshold] = useState(String(profile.alertThreshold));
   const { error, setError, run } = useAction();
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const balance = parseMoney(startBalance);
     const t = Number(threshold);
     if (!name.trim()) return setError('Informe o nome.');
-    if (!startDate) return setError('Informe a data do saldo inicial.');
-    if (balance === null || balance < 0) return setError('Informe um saldo válido.');
     if (!Number.isFinite(t) || t < 1 || t > 100) return setError('O alerta deve estar entre 1% e 100%.');
-    if (startDate !== profile.caixinhaStartDate &&
-      !window.confirm('Mudar a data do saldo inicial muda a partir de quando o aporte fixo é cobrado e quais movimentações contam. Continuar?')) return;
-    if (await run(() => updateProfile({ name: name.trim(), caixinhaStartDate: startDate, caixinhaStartBalance: balance, alertThreshold: t }))) onClose();
+    if (await run(() => updateProfile({ name: name.trim(), alertThreshold: t }))) onClose();
   };
   return (
-    <Modal title="Perfil e caixinha" onClose={onClose}>
+    <Modal title="Perfil" onClose={onClose}>
       <form className="stack" onSubmit={submit}>
         <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} /></Field>
-        <div className="grid-2">
-          <Field label="Data do saldo inicial"><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
-          <Field label="Saldo inicial da Caixinha Nubank"><MoneyInput value={startBalance} onChange={setStartBalance} /></Field>
-        </div>
-        <StartDateHint />
         <Field label="Alertar quando a categoria atingir (% do limite)">
           <input type="number" min={1} max={100} value={threshold} onChange={(e) => setThreshold(e.target.value)} />
         </Field>
+        <ErrorBox error={error} />
+        <div className="row-end"><button className="btn primary" type="submit">Salvar</button></div>
+      </form>
+    </Modal>
+  );
+}
+
+/** A partir de qual mês a caixinha conta, e o saldo dela no fim do mês anterior. */
+function StartForm({ profile, onClose }: { profile: Profile; onClose: () => void }) {
+  const currentStart = startMonthOf(profile);
+  const [month, setMonth] = useState<Month>(currentStart);
+  const [balance, setBalance] = useState(centsToInput(profile.caixinhaStartBalance));
+  const { error, setError, run } = useAction();
+  const prev = month ? addMonths(month, -1) : '';
+  const earlier = !!month && month < currentStart;
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cents = parseMoney(balance);
+    if (!month) return setError('Escolha o mês de início.');
+    if (month > currentMonth()) return setError('O início não pode ser depois do mês atual.');
+    if (cents === null || cents < 0) return setError('Informe o saldo da caixinha (pode ser 0).');
+    if (month !== currentStart && !window.confirm(
+      `A caixinha passará a contar a partir de ${monthLabel(month)}. ` +
+      'O aporte fixo, os excedentes de meses fechados e o que faltar aportar serão recalculados a partir desse mês. Continuar?',
+    )) return;
+    if (await run(() => updateProfile({ caixinhaStartDate: lastDay(prev), caixinhaStartBalance: cents }))) onClose();
+  };
+  return (
+    <Modal title="Início da caixinha" onClose={onClose}>
+      <form className="stack" onSubmit={submit}>
+        <Field label="A caixinha conta a partir de" hint="Os meses anteriores não entram na conta dos aportes.">
+          <input type="month" value={month} max={currentMonth()} onChange={(e) => setMonth(e.target.value)} />
+        </Field>
+        {prev && (
+          <Field label={`Saldo da caixinha no fim de ${monthLabel(prev)}`} hint="Confira no app do Nubank o saldo da caixinha nesse dia.">
+            <MoneyInput value={balance} onChange={setBalance} />
+          </Field>
+        )}
+        {earlier && (
+          <p className="warn-box small">
+            Se você já importou extratos da conta Nubank de {monthLabel(month)} em diante, importe-os de novo depois de salvar:
+            as aplicações e os resgates da caixinha desses meses foram deixados de fora por serem anteriores ao início. Nada será duplicado.
+          </p>
+        )}
         <ErrorBox error={error} />
         <div className="row-end"><button className="btn primary" type="submit">Salvar</button></div>
       </form>

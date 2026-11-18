@@ -48,8 +48,13 @@ export function ruleForMonth(rules: CategoryRuleVersion[], categoryId: string, m
   return own.sort((a, b) => a.effectiveMonth.localeCompare(b.effectiveMonth))[0];
 }
 
-/** Aporte fixo do mês (0 antes do mês de início da caixinha). */
+/**
+ * Aporte fixo do mês (0 antes do mês de início da caixinha). Se o início da caixinha for anterior ao
+ * primeiro valor cadastrado (ex.: o início foi antecipado depois), vale o primeiro valor.
+ */
 export function fixedForMonth(versions: FixedContributionVersion[], month: Month, startMonth: Month): Cents {
   if (month < startMonth) return 0;
-  return resolveVersion(versions, month)?.amount ?? 0;
+  const found = resolveVersion(versions, month);
+  if (found) return found.amount;
+  return [...versions].sort((a, b) => a.effectiveMonth.localeCompare(b.effectiveMonth))[0]?.amount ?? 0;
 }
