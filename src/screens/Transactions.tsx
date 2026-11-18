@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
+import { MerchantHint } from '../components/MerchantHint';
 import { ErrorBox, Field, Modal, MoneyInput, Toast, useAction } from '../components/ui';
+import { UNIDENTIFIED_ID } from '../db/db';
 import { deleteTransaction, saveTransaction, setTransactionCategory } from '../db/repo';
 import { alertsForChange, describeAlert } from '../domain/alerts';
 import type { Category, Month, Transaction } from '../domain/types';
@@ -108,6 +110,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                           }
                         }}
                       />
+                      {t.categoryId === UNIDENTIFIED_ID && <MerchantHint text={t.description} />}
                     </div>
                   );
                 })}

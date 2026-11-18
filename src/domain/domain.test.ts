@@ -1,3 +1,4 @@
+import { merchantHint, searchUrl } from './hints';
 import { describe, expect, it } from 'vitest';
 import { parseMoney, formatMoney } from '../lib/money';
 import { addMonths, monthRange } from '../lib/months';
@@ -274,5 +275,25 @@ describe('utilitários', () => {
     expect(addMonths('2026-11', 2)).toBe('2027-01');
     expect(addMonths('2026-01', -1)).toBe('2025-12');
     expect(monthRange('2026-11', '2027-02')).toEqual(['2026-11', '2026-12', '2027-01', '2027-02']);
+  });
+});
+
+describe('merchantHint (dica do que é a despesa)', () => {
+  it('reconhece pistas no nome', () => {
+    expect(merchantHint('Force One Academia')).toBe('academia ou atividade física');
+    expect(merchantHint('SMARTFIT PALHOCA')).toBe('academia ou atividade física');
+    expect(merchantHint('PETZ FLORIANOPOLIS')).toBe('pet shop ou veterinário');
+    expect(merchantHint('Barbearia do Zé')).toBe('salão de beleza, barbearia ou estética');
+    expect(merchantHint('CACAU SHOW 123')).toBe('doces, chocolates ou confeitaria');
+    expect(merchantHint('PAG*JoseSilva')).toMatch(/maquininha/);
+    expect(merchantHint('Shopee *Loja')).toMatch(/vende de tudo/);
+  });
+  it('não inventa quando não há pista', () => {
+    expect(merchantHint('XPTO COMERCIO LTDA')).toBeUndefined();
+    expect(merchantHint('PERSONALIZADOS ANA')).toBeUndefined();
+    expect(merchantHint('PETROBRAS POSTO')).toBeUndefined();
+  });
+  it('monta a pesquisa sem a parcela', () => {
+    expect(searchUrl('Force One Academia - Parcela 2/3')).toBe('https://www.google.com/search?q=Force%20One%20Academia');
   });
 });

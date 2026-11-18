@@ -10,6 +10,7 @@ import { cardsInDocument, prepareReview, resolveCategory, type ReviewItem, type 
 import { PdfPasswordError, type ParsedDocument } from '../import/types';
 import { formatMoney } from '../lib/money';
 import { dateLabel, monthLabel } from '../lib/months';
+import { MerchantHint } from '../components/MerchantHint';
 import { summaryInput, type ReadyData } from '../useAppData';
 
 type Phase =
@@ -304,6 +305,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel }: {
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         )}
+        {editable && askIndexes.has(r.index) && <MerchantHint text={it.matchText || it.description} />}
       </div>
     );
   };

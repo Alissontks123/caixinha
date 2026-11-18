@@ -395,3 +395,7 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
   .rule-lines .rule-text { grid-column: 1 / -1; padding-top: 6px; }
 }
 .start-hint { margin: -4px 0 0; line-height: 1.45; }
+
+/* dica do que provavelmente é a despesa + link de pesquisa */
+.tx-hint { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.tx-hint a { color: var(--primary); font-weight: 600; white-space: nowrap; }

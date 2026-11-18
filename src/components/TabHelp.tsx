@@ -41,6 +41,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p>Lista todos os lançamentos do mês escolhido no topo, agrupados por dia.</p>
         <p>Use os botões de categoria no alto para filtrar. Para mudar a categoria de um gasto, use a caixa ao lado do valor:
           o app memoriza o estabelecimento para as próximas importações.</p>
+        <p>Embaixo dos gastos <b>A identificar</b>, o app mostra uma dica do que provavelmente é (quando o nome dá alguma pista) e o link
+          <b> 🔎 Pesquisar no Google</b>, que abre uma pesquisa com o nome do estabelecimento.</p>
         <p>Toque na descrição para editar ou excluir um lançamento. <b>+ Novo lançamento</b> serve para gastos que não vieram de fatura ou extrato.</p>
         <p className="muted">Valores negativos são estornos e abatem o total da categoria. Meses fechados não podem ser alterados: reabra o mês no Painel.</p>
       </>
@@ -52,7 +54,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
       <>
         <p>Envie o <b>PDF</b> da fatura do cartão C6 ou Nubank, ou do extrato da conta Nubank, baixado no app do banco.</p>
         <p>O app lê os gastos, confere se a soma bate com o total do documento e sugere a categoria de cada um. Escolha a categoria do
-          que ele não reconheceu e toque em <b>Importar</b>.</p>
+          que ele não reconheceu e toque em <b>Importar</b>. Se não souber o que é, veja a dica embaixo da despesa ou toque em
+          <b> 🔎 Pesquisar no Google</b>.</p>
         <p>No extrato da conta Nubank, as aplicações e os resgates da caixinha entram sozinhos na aba Caixinha.</p>
         <p className="muted">A fatura da C6 pede senha: os 6 primeiros dígitos do CPF do titular. Importar o mesmo PDF duas vezes não duplica nada.
           O PDF é lido aqui mesmo e não é enviado para lugar nenhum.</p>
