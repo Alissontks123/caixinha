@@ -3,7 +3,7 @@
  * Não é segredo: ele só identifica o app e só funciona nos endereços autorizados no console.
  * Vazio = sincronização com o Drive desativada. A variável VITE_GOOGLE_CLIENT_ID (usada nos testes) tem prioridade.
  */
-const DEFAULT_CLIENT_ID = '';
+const DEFAULT_CLIENT_ID = '253275375413-p84ok0b06nha93cs1iku2dtd9c31dm3c.apps.googleusercontent.com';
 
 export const GOOGLE_CLIENT_ID: string = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || DEFAULT_CLIENT_ID;
 
