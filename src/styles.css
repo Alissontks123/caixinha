@@ -403,3 +403,20 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 /* divisão do gasto com outras pessoas */
 .split-box { border-top: 1px solid var(--border); padding-top: 12px; }
 .segmented.three { grid-template-columns: repeat(3, 1fr); }
+
+/* linha de chips com setas para deslizar */
+.scroll-row { position: relative; }
+.scroll-row .chips { scroll-behavior: smooth; }
+.scroll-row .chips::-webkit-scrollbar { display: none; }
+.scroll-row.fade-left .chips { mask-image: linear-gradient(to right, transparent 0, #000 44px); }
+.scroll-row.fade-right .chips { mask-image: linear-gradient(to left, transparent 0, #000 44px); }
+.scroll-row.fade-left.fade-right .chips { mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%); }
+.scroll-arrow {
+  position: absolute; top: 50%; transform: translateY(calc(-50% - 2px)); z-index: 1;
+  width: 32px; height: 32px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: 1.3rem; line-height: 1; box-shadow: var(--shadow); cursor: pointer;
+}
+.scroll-arrow.left { left: 0; }
+.scroll-arrow.right { right: 0; }
+.scroll-arrow:hover { background: var(--surface-2); }

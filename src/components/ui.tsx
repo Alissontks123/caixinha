@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { addMonths, monthLabel } from '../lib/months';
 import { parseMoney } from '../lib/money';
@@ -96,4 +96,43 @@ export function Toast({ messages, onClose }: { messages: string[]; onClose: () =
 
 export function ErrorBox({ error }: { error: string | null }) {
   return error ? <p className="error-box" role="alert">{error}</p> : null;
+}
+
+/**
+ * Linha de botões (chips) que rola para o lado, com setas ‹ › que aparecem quando há mais itens
+ * escondidos. `activeKey` muda quando o item ativo muda, para trazê-lo para a vista.
+ */
+export function ScrollRow({ children, label, activeKey }: { children: ReactNode; label?: string; activeKey?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setEdges({ left: el.scrollLeft > 2, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [update, children]);
+  useEffect(() => {
+    // centraliza o item ativo, para ele não ficar escondido embaixo de uma seta
+    const el = ref.current;
+    const chip = el?.querySelector<HTMLElement>('.chip.active');
+    if (el && chip) el.scrollLeft = chip.offsetLeft - el.offsetLeft - (el.clientWidth - chip.offsetWidth) / 2;
+  }, [activeKey]);
+  const scroll = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: 'smooth' });
+  };
+  return (
+    <div className={`scroll-row ${edges.left ? 'fade-left' : ''} ${edges.right ? 'fade-right' : ''}`}>
+      {edges.left && <button type="button" className="scroll-arrow left" aria-label="Ver anteriores" onClick={() => scroll(-1)}>‹</button>}
+      <div ref={ref} className="chips" role="group" aria-label={label} onScroll={update}>{children}</div>
+      {edges.right && <button type="button" className="scroll-arrow right" aria-label="Ver mais" onClick={() => scroll(1)}>›</button>}
+    </div>
+  );
 }

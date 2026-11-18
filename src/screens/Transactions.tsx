@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { MerchantHint } from '../components/MerchantHint';
-import { ErrorBox, Field, Modal, MoneyInput, Toast, useAction } from '../components/ui';
+import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, useAction } from '../components/ui';
 import { UNIDENTIFIED_ID } from '../db/db';
 import { deleteTransaction, saveTransaction, setTransactionCategory } from '../db/repo';
 import { alertsForChange, describeAlert } from '../domain/alerts';
@@ -58,14 +58,14 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
 
   return (
     <div className="stack">
-      <div className="chips">
+      <ScrollRow label="Filtrar por categoria" activeKey={filter ?? 'todos'}>
         <button className={`chip ${!filter ? 'active' : ''}`} onClick={() => setFilter(undefined)}>Todos ({all.length})</button>
         {data.categories.map((c) => (
           <button key={c.id} className={`chip ${filter === c.id ? 'active' : ''}`} onClick={() => setFilter(c.id)}>
             <span className="dot" style={{ background: c.color }} />{c.name} ({counts.get(c.id) ?? 0})
           </button>
         ))}
-      </div>
+      </ScrollRow>
 
       {closed ? (
         <p className="card muted small">Este mês está fechado. Reabra-o no Painel para alterar lançamentos.</p>
