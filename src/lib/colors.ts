@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useIsDark } from './theme';
 
 /**
  * Paleta categórica pastel ("Lavanda"), em ordem fixa.
@@ -24,14 +24,5 @@ export function displayColor(hex: string, dark: boolean): string {
   return i >= 0 ? SERIES_DARK[i] : light;
 }
 
-export function useDarkMode(): boolean {
-  const query = typeof window !== 'undefined' ? window.matchMedia?.('(prefers-color-scheme: dark)') : undefined;
-  const [dark, setDark] = useState(() => !!query?.matches);
-  useEffect(() => {
-    if (!query) return;
-    const on = (e: MediaQueryListEvent) => setDark(e.matches);
-    query.addEventListener('change', on);
-    return () => query.removeEventListener('change', on);
-  }, [query]);
-  return dark;
-}
+/** true quando o tema em uso é o escuro (respeita a escolha feita no botão de tema). */
+export const useDarkMode = useIsDark;

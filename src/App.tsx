@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SyncBadge, SyncChoiceModal } from './components/SyncPanel';
 import { HelpButton } from './components/TabHelp';
+import { ThemeButton } from './components/ThemeButton';
 import { MonthPicker } from './components/ui';
 import type { Month } from './domain/types';
 import { currentMonth } from './lib/months';
@@ -56,8 +57,9 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand">Olá, {d.profile.name}<SyncBadge onClick={() => go('ajustes')} /></span>
+          {(tab === 'painel' || tab === 'lancamentos') && <div className="topbar-month"><MonthPicker month={month} onChange={setMonth} /></div>}
           <div className="topbar-actions">
-            {(tab === 'painel' || tab === 'lancamentos') && <MonthPicker month={month} onChange={setMonth} />}
+            <ThemeButton />
             {tab !== 'ajuda' && <HelpButton topic={tab} />}
           </div>
         </div>

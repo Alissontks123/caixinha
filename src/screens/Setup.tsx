@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFields';
 import { statusText } from '../components/SyncPanel';
 import { HelpButton } from '../components/TabHelp';
+import { ThemeButton } from '../components/ThemeButton';
 import { StartDateHint } from '../components/RuleFields';
 import { connect, useSyncState } from '../sync/engine';
 import { ErrorBox, Field, MoneyInput, useAction } from '../components/ui';
@@ -89,7 +90,7 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
       <header className="setup-head">
         <div className="row-between">
           <h1>Bem-vindo(a)!</h1>
-          <HelpButton topic="setup" />
+          <span className="topbar-actions"><ThemeButton /><HelpButton topic="setup" /></span>
         </div>
         <p>Vamos configurar seu controle de gastos. Tudo pode ser alterado depois em <b>Ajustes</b>.</p>
         <button type="button" className="link-btn" onClick={onHelp}>Como instalar e usar o app</button>
