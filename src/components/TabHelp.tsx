@@ -55,6 +55,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
           <b> Dividir este gasto com outras pessoas</b>. Informe a sua parte por número de pessoas, percentual ou valor fixo: só a sua parte
           conta nos limites e nos aportes. Nas compras parceladas, as próximas parcelas entram com a mesma divisão, e um estorno
           da compra é dividido na mesma proporção.</p>
+        <p><b>Lançamento repetido:</b> ao criar um lançamento parecido com um que já existe, o app avisa e pergunta se mantém o que
+          existe, o novo ou os dois.</p>
         <p><b>Buscar:</b> digite no campo de busca para achar lançamentos de todos os meses.</p>
         <p><b>Selecionar:</b> marque vários lançamentos e mova todos para uma categoria de uma vez.</p>
         <p><b>Desfazer:</b> ao excluir um lançamento ou trocar a categoria, aparece "↶ Desfazer" por alguns segundos.</p>
@@ -77,6 +79,9 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p><b>Compras parceladas:</b> na primeira vez que uma compra parcelada aparece, escolha <b>Parcela por mês</b> (cada parcela
           conta no mês da sua fatura) ou <b>À vista</b> (o total conta no mês da 1ª parcela e as próximas não contam; se a compra já
           estava no meio, ela é desconsiderada). Dá para mudar depois, tocando no lançamento na aba Gastos.</p>
+        <p><b>Lançamentos repetidos:</b> se o arquivo tiver lançamentos que já existem no app (importados antes ou lançados à mão com
+          nome parecido, mesmo valor e até 3 dias de diferença), o app avisa. Você pode <b>ignorar os repetidos</b> ou <b>analisar</b> cada
+          um e escolher manter o que já existe, o novo ou os dois.</p>
         <p>No extrato da conta Nubank, as aplicações e os resgates da caixinha entram sozinhos na aba Caixinha.</p>
         <p className="muted">A fatura da C6 pede senha: os 6 primeiros dígitos do CPF do titular. Importar o mesmo PDF duas vezes não duplica nada.
           O PDF é lido aqui mesmo e não é enviado para lugar nenhum.</p>

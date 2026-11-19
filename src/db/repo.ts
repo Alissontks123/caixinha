@@ -186,6 +186,10 @@ export async function saveImport(
   const toLearn = new Map<string, { categoryId: string; example: string }>();
   const movements: CaixinhaMovement[] = [];
   const replacedManual: string[] = [];
+  // repetidos em que o usuário escolheu ficar com o novo: o antigo sai e o novo herda o que foi ajustado nele
+  const replacedTx: string[] = [];
+  const oldById = new Map((await db.transactions.bulkGet(review.filter((r) => r.duplicateChoice === 'new' && r.duplicateOf).map((r) => r.duplicateOf!)))
+    .filter((t): t is Transaction => !!t).map((t) => [t.id, t]));
 
   for (const r of review) {
     if (r.status === 'caixinha') {
@@ -207,6 +211,8 @@ export async function saveImport(
     if (closed.has(r.item.month)) continue; // fechado durante a revisão
     const categoryId = resolveCategory(review, choices, r.index) || UNIDENTIFIED_ID;
     const it = r.item;
+    const old = r.duplicateChoice === 'new' && r.duplicateOf ? oldById.get(r.duplicateOf) : undefined;
+    if (old) replacedTx.push(old.id);
     toSave.push({
       id: uid(),
       date: it.date,
@@ -216,7 +222,8 @@ export async function saveImport(
       categoryId,
       source: doc.source,
       createdAt: now + r.index,
-      fingerprint: r.fingerprint,
+      // "manter os dois" do mesmo item do PDF: precisa de outra marca para não ser barrado como repetido
+      fingerprint: r.duplicateChoice === 'both' && !r.similar ? `${r.fingerprint}#copia` : r.fingerprint,
       matchKey: r.matchKey || undefined,
       learnable: r.learnable,
       cardLast4: it.card?.last4,
@@ -224,6 +231,7 @@ export async function saveImport(
       share: r.share,
       // à vista: a 1ª parcela conta pelo total; vista a partir do meio, a compra é desconsiderada
       avista: r.askInstallment && avistaChosen.has(r.index) ? (it.installment?.n === 1 ? 'total' : 'skip') : r.avista,
+      ...(old ? { note: old.note, recurring: old.recurring, share: old.share ?? r.share } : {}),
     });
     // memoriza só o que o usuário escolheu ou corrigiu (o que a regra automática já acerta não precisa)
     const userChose = choices.has(r.index) && choices.get(r.index) !== r.categoryId;
@@ -233,6 +241,8 @@ export async function saveImport(
   }
 
   await db.transaction('rw', [db.transactions, db.learnedRules, db.closings, db.caixinha], async () => {
+    // os substituídos saem antes, para o novo (que pode ter a mesma marca do PDF) poder entrar
+    await db.transactions.bulkDelete(replacedTx);
     // segurança extra contra duplicidade (ex.: dois imports ao mesmo tempo)
     const existing = new Set(
       (await db.transactions.where('fingerprint').anyOf(toSave.map((t) => t.fingerprint!)).toArray()).map((t) => t.fingerprint),

@@ -146,6 +146,32 @@ describe('revisão da importação', () => {
     expect(r[2].askInstallment).toBe(true); // nova (mesmo sendo do meio): pergunta
   });
 
+  it('repetidos: mesmo item do PDF ou parecido com lançamento manual (nome, valor e até 3 dias)', () => {
+    const manual: Transaction[] = [
+      { id: 'm1', date: '2026-10-08', month: '2026-10', description: 'Padaria Central', amount: 3500, categoryId: 'ali', source: 'manual', createdAt: 0 },
+      { id: 'm2', date: '2026-10-01', month: '2026-10', description: 'Padaria Central', amount: 3500, categoryId: 'ali', source: 'manual', createdAt: 0 },
+    ];
+    const d = doc([
+      item({ description: 'PADARIA CENTRAL LTDA', date: '2026-10-10', amount: 3500 }),
+      item({ description: 'PADARIA CENTRAL LTDA', date: '2026-10-25', amount: 3500 }), // longe demais das duas
+      item({ description: 'CINEMA', date: '2026-10-10', amount: 3500 }),
+    ]);
+    const prints = fingerprintsOf(d);
+    const r = prepareReview(d, ctx({ transactions: manual }));
+    expect(r[0].status).toBe('duplicate');
+    expect(r[0].duplicateOf).toBe('m1'); // o mais próximo na data
+    expect(r[0].similar).toBe(true);
+    expect(r[1].status).toBe('new');
+    expect(r[2].status).toBe('new');
+    // mesmo PDF de novo: aponta para o lançamento importado antes
+    const imported: Transaction[] = [{ id: 'i1', date: '2026-10-10', month: '2026-10', description: 'CINEMA', amount: 3500, categoryId: 'via',
+      source: 'fatura-c6', createdAt: 0, fingerprint: prints[2] }];
+    const again = prepareReview(d, ctx({ transactions: imported, existingFingerprints: new Set([prints[2]]) }));
+    expect(again[2].status).toBe('duplicate');
+    expect(again[2].duplicateOf).toBe('i1');
+    expect(again[2].categoryId).toBe('via');
+  });
+
   it('marca duplicados, mês fechado, ignorados e cartões de outra pessoa', () => {
     const items = [
       item({ description: 'A' }),

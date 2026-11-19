@@ -4,6 +4,7 @@ import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, UndoToast, useAct
 import { UNIDENTIFIED_ID } from '../db/db';
 import { clearRecurring, deleteTransaction, saveTransaction, setCategoryForMany, setInstallmentMode } from '../db/repo';
 import { recurringKey } from '../domain/insights';
+import { findSimilar } from '../domain/duplicates';
 import { normalizeText } from '../domain/categorize';
 import { alertsForChange, describeAlert } from '../domain/alerts';
 import { describeShare, effectiveAmount, myAmount, shareOf } from '../domain/share';
@@ -214,6 +215,8 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
           month={month}
           initial={editing === 'new' ? undefined : editing}
           recurringKeys={new Set(data.transactions.filter((t) => t.recurring).map(recurringKey))}
+          existing={data.transactions}
+          closedMonths={new Set(data.closings.map((c) => c.month))}
           defaultCategory={filter}
           onClose={() => setEditing(null)}
           onSaved={(tx) => notify(
@@ -247,7 +250,7 @@ function CategorySelect({
 }
 
 function TransactionForm({
-  categories, month, initial, defaultCategory, onClose, onSaved, onDeleted, recurringKeys,
+  categories, month, initial, defaultCategory, onClose, onSaved, onDeleted, recurringKeys, existing, closedMonths,
 }: {
   categories: Category[];
   month: Month;
@@ -257,6 +260,8 @@ function TransactionForm({
   onSaved: (tx: Transaction) => void;
   onDeleted: (info: UndoInfo) => void;
   recurringKeys: Set<string>;
+  existing: Transaction[];
+  closedMonths: Set<Month>;
 }) {
   const defaultDate = month === currentMonth() ? todayISO() : `${month}-01`;
   const [date, setDate] = useState(initial?.date ?? defaultDate);
@@ -272,8 +277,10 @@ function TransactionForm({
   const [avistaMode, setAvistaMode] = useState(!!initial?.avista);
   const [split, setSplit] = useState<SplitDraft>(() => splitDraftOf(initial?.share));
   const { error, setError, run } = useAction();
+  // lançamento novo parecido com um que já existe: pergunta o que manter antes de salvar
+  const [twin, setTwin] = useState<Transaction | null>(null);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent, decision?: 'existing' | 'new' | 'both') => {
     e.preventDefault();
     const cents = parseMoney(amount);
     if (!date) return setError('Informe a data.');
@@ -294,14 +301,23 @@ function TransactionForm({
       recurring: recurring || undefined,
       share,
     };
+    if (!initial && !decision) {
+      const found = findSimilar({ description: draft.description, amount: draft.amount, date: draft.date }, existing);
+      if (found) { setTwin(found); return; }
+    }
+    if (decision === 'existing') { onClose(); return; }
+    // "manter o novo": o lançamento que existia passa a ter o que foi digitado (mantém os dados da fatura, se veio de uma)
+    const target = decision === 'new' && twin
+      ? { ...draft, id: twin.id, source: twin.source, month: twin.source !== 'manual' ? twin.month : draft.month }
+      : draft;
     const ok = await run(async () => {
-      await saveTransaction(draft);
+      await saveTransaction(target);
       // desmarcou: o estabelecimento deixa de ser recorrente em todos os meses
       if (wasRecurring && !recurring && initial) await clearRecurring(recurringKey(initial));
       if (initial?.installment && avistaMode !== !!initial.avista) await setInstallmentMode(initial, avistaMode);
     });
     if (ok) {
-      onSaved({ ...initial, ...draft, id: initial?.id ?? '__novo__', createdAt: initial?.createdAt ?? Date.now() });
+      onSaved({ ...initial, ...target, id: target.id ?? '__novo__', createdAt: initial?.createdAt ?? Date.now() });
       onClose();
     }
   };
@@ -317,7 +333,33 @@ function TransactionForm({
 
   return (
     <Modal title={initial ? 'Editar lançamento' : 'Novo lançamento'} onClose={onClose}>
-      <form className="stack" onSubmit={submit}>
+      {twin && (
+        <div className="stack-sm dup-warning">
+          <p className="warn-box small"><b>Já existe um lançamento parecido</b> (nome, valor e data próximos). O que você quer manter?</p>
+          <div className="dup-pair">
+            <div className="dup-side kept">
+              <span className="dup-tag">Já existe</span>
+              <b>{twin.description}</b>
+              <span className="small muted">{dateLabel(twin.date)} · {categories.find((c) => c.id === twin.categoryId)?.name ?? ''}</span>
+              <span className="dup-amount">{formatMoney(twin.amount)}</span>
+            </div>
+            <div className="dup-side kept">
+              <span className="dup-tag">Novo</span>
+              <b>{description.trim()}</b>
+              <span className="small muted">{date ? dateLabel(date) : ''} · {categories.find((c) => c.id === categoryId)?.name ?? ''}</span>
+              <span className="dup-amount">{formatMoney((isRefund ? -1 : 1) * (parseMoney(amount) ?? 0))}</span>
+            </div>
+          </div>
+          <div className="dup-actions">
+            <button type="button" className="btn ghost" onClick={(e) => submit(e as unknown as React.FormEvent, 'existing')}>Manter o que existe <span className="muted small">(não salva o novo)</span></button>
+            <button type="button" className="btn ghost" disabled={closedMonths.has(twin.month)} onClick={(e) => submit(e as unknown as React.FormEvent, 'new')}>Manter o novo <span className="muted small">(troca o que existe)</span></button>
+            <button type="button" className="btn primary" onClick={(e) => submit(e as unknown as React.FormEvent, 'both')}>Manter os dois</button>
+          </div>
+          {closedMonths.has(twin.month) && <span className="small muted">O lançamento que existe é de um mês fechado e não pode ser trocado.</span>}
+          <button type="button" className="link-btn small" onClick={() => setTwin(null)}>Voltar e editar</button>
+        </div>
+      )}
+      <form className="stack" onSubmit={submit} style={twin ? { display: 'none' } : undefined}>
         <div className="segmented">
           <button type="button" className={!isRefund ? 'active' : ''} onClick={() => setIsRefund(false)}>Gasto</button>
           <button type="button" className={isRefund ? 'active' : ''} onClick={() => setIsRefund(true)}>Estorno</button>

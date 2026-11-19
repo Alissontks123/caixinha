@@ -631,3 +631,18 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .sync-btn:disabled { opacity: 0.7; cursor: default; }
 .sync-btn.spinning span { display: inline-block; animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* lançamentos repetidos: comparação lado a lado */
+.dup-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dup-side {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); opacity: 0.6; transition: opacity 0.2s, border-color 0.2s;
+}
+.dup-side.kept { opacity: 1; border-color: var(--primary); background: var(--primary-soft); }
+.dup-side b { overflow-wrap: anywhere; font-size: 0.9rem; }
+.dup-tag { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.dup-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
+.dup-card .segmented button { font-size: 0.78rem; padding: 7px 4px; }
+.dup-card .segmented button:disabled { opacity: 0.4; }
+.dup-actions { display: flex; flex-direction: column; gap: 8px; }
+.dup-warning { margin-bottom: 4px; }

@@ -1,5 +1,6 @@
 import { matchKeyOf, normalizeText, suggestCategory } from '../domain/categorize';
 import { installmentNumber, proportionalShare, sameInstallmentPurchase } from '../domain/share';
+import { findSimilar } from '../domain/duplicates';
 import type { CaixinhaMovement, Category, ISODate, KnownCard, Month, Share, Transaction } from '../domain/types';
 import type { ParsedDocument, ParsedItem } from './types';
 
@@ -39,6 +40,12 @@ export interface ReviewItem {
   askInstallment?: boolean;
   /** Parcela de uma compra já considerada à vista: entra desconsiderada. */
   avista?: 'skip';
+  /** Repetido: id do lançamento que já existe no app (mesmo item do PDF, ou parecido com um já lançado). */
+  duplicateOf?: string;
+  /** true quando o repetido é só parecido (nome, valor e data próximos), não o mesmo item do PDF. */
+  similar?: boolean;
+  /** Decisão do usuário na análise de repetidos. */
+  duplicateChoice?: 'existing' | 'new' | 'both';
 }
 
 export interface PrepareContext {
@@ -111,7 +118,12 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
     else if (item.card && cardMine.get(cardId(bank, item.card.last4)) === false) status = 'not-mine';
     else if (ctx.existingFingerprints.has(prints[index])) status = 'duplicate';
     else if (ctx.closedMonths.has(item.month)) status = 'closed-month';
-    return { index, item, status, categoryId: '', learnable: false, matchKey: matchKeyOf(item.matchText), fingerprint: prints[index] };
+    const r: ReviewItem = { index, item, status, categoryId: '', learnable: false, matchKey: matchKeyOf(item.matchText), fingerprint: prints[index] };
+    if (status === 'duplicate') {
+      const same = ctx.transactions.find((t) => t.fingerprint === prints[index]);
+      if (same) { r.duplicateOf = same.id; r.categoryId = same.categoryId; }
+    }
+    return r;
   });
 
   const active = review.filter((r) => r.status === 'new');
@@ -162,6 +174,19 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
     } else {
       r.learnable = true;
     }
+  }
+
+  // repetidos: parecido com um lançamento que já existe (nome parecido, mesmo valor, até 3 dias)
+  const used = new Set(review.map((r) => r.duplicateOf).filter((x): x is string => !!x));
+  for (const r of active) {
+    if (r.item.kind === 'iof') continue;
+    const twin = findSimilar({ description: r.item.matchText || r.item.description, amount: r.item.amount, date: r.item.date }, ctx.transactions, used)
+      ?? findSimilar({ description: r.item.description, amount: r.item.amount, date: r.item.date }, ctx.transactions, used);
+    if (!twin) continue;
+    used.add(twin.id);
+    r.status = 'duplicate';
+    r.duplicateOf = twin.id;
+    r.similar = true;
   }
 
   // parcelas seguintes de uma compra que o usuário dividiu entram com a mesma divisão

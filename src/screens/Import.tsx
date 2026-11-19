@@ -18,6 +18,8 @@ type Phase =
   | { step: 'pick' }
   | { step: 'password'; bytes: Uint8Array; incorrect: boolean }
   | { step: 'cards'; doc: ParsedDocument; cards: KnownCard[] }
+  | { step: 'dups'; doc: ParsedDocument; review: ReviewItem[] }
+  | { step: 'analyze'; doc: ParsedDocument; review: ReviewItem[] }
   | { step: 'review'; doc: ParsedDocument; review: ReviewItem[] }
   | { step: 'done'; doc: ParsedDocument; result: ImportResult; month?: Month; alerts: ChangeAlert[] };
 
@@ -50,7 +52,9 @@ export function Import({ data, goToTransactions }: Props) {
       movements: data.movements,
       caixinhaStartDate: data.profile.caixinhaStartDate,
     });
-    setPhase({ step: 'review', doc, review });
+    // lançamentos que já existem: avisa antes da revisão
+    const dups = review.filter((r) => r.status === 'duplicate' && r.duplicateOf);
+    setPhase({ step: dups.length ? 'dups' : 'review', doc, review });
   };
 
   const continueWith = (doc: ParsedDocument) => {
@@ -179,6 +183,32 @@ export function Import({ data, goToTransactions }: Props) {
             await saveCards(cards);
             startReview(phase.doc, [...data.cards, ...cards]);
           }}
+        />
+      )}
+
+      {phase.step === 'dups' && (
+        <section className="card stack">
+          <h2>Lançamentos repetidos</h2>
+          <p>
+            <b>{phase.review.filter((r) => r.status === 'duplicate' && r.duplicateOf).length}</b> lançamento(s) deste arquivo já existem no app
+            (importados antes ou lançados à mão com nome, valor e data parecidos).
+          </p>
+          <button className="btn primary" onClick={() => setPhase({ step: 'review', doc: phase.doc, review: phase.review })}>
+            Ignorar lançamentos duplicados (não serão importados)
+          </button>
+          <button className="btn ghost" onClick={() => setPhase({ step: 'analyze', doc: phase.doc, review: phase.review })}>
+            Analisar lançamentos
+          </button>
+        </section>
+      )}
+
+      {phase.step === 'analyze' && (
+        <AnalyzeDuplicates
+          review={phase.review}
+          existing={data.transactions}
+          categories={data.categories}
+          closedMonths={new Set(data.closings.map((c) => c.month))}
+          onDone={(review) => setPhase({ step: 'review', doc: phase.doc, review })}
         />
       )}
 
@@ -311,7 +341,7 @@ function CardsStep({ cards, onConfirm, onCancel }: {
 
 const STATUS_INFO: Record<Exclude<ReviewStatus, 'new' | 'caixinha'>, string> = {
   'before-start': 'Caixinha: antes da data do saldo inicial (já incluídos nele)',
-  duplicate: 'Já importados antes',
+  duplicate: 'Repetidos: já existem no app (não serão importados)',
   'closed-month': 'De meses já fechados (não serão importados)',
   'not-mine': 'De cartões de outras pessoas',
   ignored: 'Não são gastos (ignorados)',
@@ -510,7 +540,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
               ? `Faltam ${pending.length} para escolher`
               : fresh.length > 0
                 ? `Importar ${fresh.length} lançamento(s)`
-                : 'Importar movimentos da caixinha'}
+                : caixinha.length > 0 ? 'Importar movimentos da caixinha' : 'Nada para importar'}
         </button>
       </div>
     </div>
@@ -523,4 +553,81 @@ function reviewAmount(r: ReviewItem, avista: Set<number>): number {
   if (r.avista === 'skip') return 0;
   if (r.askInstallment && inst && avista.has(r.index)) return inst.n === 1 ? r.item.amount * inst.total : 0;
   return r.item.amount;
+}
+
+const SOURCE_NAME: Record<string, string> = {
+  manual: 'lançado à mão', 'fatura-c6': 'fatura C6', 'fatura-nubank': 'fatura Nubank', 'extrato-nubank': 'extrato Nubank',
+};
+
+/** Compara cada repetido com o lançamento que já existe e deixa escolher qual manter (ou os dois). */
+function AnalyzeDuplicates({ review, existing, categories, closedMonths, onDone }: {
+  review: ReviewItem[];
+  existing: Transaction[];
+  categories: Category[];
+  closedMonths: Set<Month>;
+  onDone: (review: ReviewItem[]) => void;
+}) {
+  const byId = new Map(existing.map((t) => [t.id, t]));
+  const catName = new Map(categories.map((c) => [c.id, c.name]));
+  const dups = review.filter((r) => r.status === 'duplicate' && r.duplicateOf && byId.has(r.duplicateOf));
+  const [choice, setChoice] = useState<Map<number, 'existing' | 'new' | 'both'>>(() => new Map(dups.map((r) => [r.index, 'existing'])));
+  const set = (i: number, c: 'existing' | 'new' | 'both') => setChoice((m) => new Map(m).set(i, c));
+  const all = (c: 'existing' | 'both') => setChoice(new Map(dups.map((r) => [r.index, c])));
+
+  const finish = () => {
+    onDone(review.map((r) => {
+      const c = choice.get(r.index);
+      if (!c || c === 'existing' || !r.duplicateOf) return r;
+      const old = byId.get(r.duplicateOf)!;
+      // fica com o novo (ou os dois): entra na revisão com a categoria do lançamento que já existia
+      return { ...r, status: 'new', duplicateChoice: c, categoryId: r.categoryId || old.categoryId,
+        reason: c === 'new' ? 'substitui o lançamento que já existia' : 'mantido junto com o que já existia' };
+    }));
+  };
+
+  return (
+    <div className="stack">
+      <section className="card stack-sm">
+        <h2>Analisar repetidos</h2>
+        <p className="muted small">Para cada um, escolha o que manter. "Manter o novo" troca o antigo pelo da fatura, mantendo a categoria, a observação e a divisão que você tinha colocado.</p>
+        <div className="grid-2">
+          <button className="btn ghost small" onClick={() => all('existing')}>Manter todos os que já existem</button>
+          <button className="btn ghost small" onClick={() => all('both')}>Manter os dois em todos</button>
+        </div>
+      </section>
+      {dups.map((r) => {
+        const old = byId.get(r.duplicateOf!)!;
+        const oldClosed = closedMonths.has(old.month);
+        const c = choice.get(r.index);
+        return (
+          <section key={r.index} className="card stack-sm dup-card">
+            <div className="dup-pair">
+              <div className={`dup-side ${c === 'existing' || c === 'both' ? 'kept' : ''}`}>
+                <span className="dup-tag">Já existe · {SOURCE_NAME[old.source] ?? old.source}</span>
+                <b>{old.description}</b>
+                <span className="small muted">{dateLabel(old.date)} · {catName.get(old.categoryId) ?? ''}</span>
+                <span className="dup-amount">{formatMoney(old.amount)}</span>
+              </div>
+              <div className={`dup-side ${c === 'new' || c === 'both' ? 'kept' : ''}`}>
+                <span className="dup-tag">Novo · deste arquivo</span>
+                <b>{r.item.description}</b>
+                <span className="small muted">{dateLabel(r.item.date)}{r.similar ? ' · parecido' : ' · igual'}</span>
+                <span className="dup-amount">{formatMoney(r.item.amount)}</span>
+              </div>
+            </div>
+            <div className="segmented three">
+              <button type="button" className={c === 'existing' ? 'active' : ''} onClick={() => set(r.index, 'existing')}>Manter o que existe</button>
+              <button type="button" className={c === 'new' ? 'active' : ''} disabled={oldClosed} onClick={() => set(r.index, 'new')}>Manter o novo</button>
+              <button type="button" className={c === 'both' ? 'active' : ''} onClick={() => set(r.index, 'both')}>Manter os dois</button>
+            </div>
+            {oldClosed && <span className="small muted">O lançamento que existe é de um mês fechado e não pode ser trocado.</span>}
+          </section>
+        );
+      })}
+      <div className="sticky-footer">
+        <span />
+        <button className="btn primary" onClick={finish}>Continuar para a revisão</button>
+      </div>
+    </div>
+  );
 }

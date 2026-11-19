@@ -75,3 +75,17 @@ describe('compra parcelada à vista', () => {
     expect(futureInstallments([first])).toEqual([]);
   });
 });
+
+describe('lançamentos repetidos', () => {
+  it('compara nome parecido, mesmo valor e até 3 dias', async () => {
+    const { isSimilarTransaction, namesSimilar } = await import('./duplicates');
+    expect(namesSimilar('Padaria Central', 'PADARIA CENTRAL LTDA')).toBe(true);
+    expect(namesSimilar('Mercado', 'Mercado Bom Preço')).toBe(true);
+    expect(namesSimilar('Ifd*Sr Padilha Restaur', 'Ifd *Our Sushi')).toBe(false);
+    expect(namesSimilar('Netflix', 'Spotify')).toBe(false);
+    const a = { description: 'Padaria Central', amount: 3500, date: '2026-11-10' };
+    expect(isSimilarTransaction(a, { description: 'PADARIA CENTRAL LTDA', amount: 3500, date: '2026-11-12' })).toBe(true);
+    expect(isSimilarTransaction(a, { description: 'PADARIA CENTRAL LTDA', amount: 3500, date: '2026-11-15' })).toBe(false); // 5 dias
+    expect(isSimilarTransaction(a, { description: 'PADARIA CENTRAL LTDA', amount: 3600, date: '2026-11-10' })).toBe(false); // outro valor
+  });
+});
