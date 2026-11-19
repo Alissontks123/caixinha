@@ -119,7 +119,8 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
       <section className="card stack-sm">
         <h2>Backup</h2>
         <p className="muted small">
-          Salve uma cópia dos seus dados. Até a sincronização com o Google Drive ficar pronta, use isto para levar os dados para outro aparelho.
+          Salve uma cópia dos seus dados num arquivo, para guardar ou levar para outro aparelho. Com o Google Drive conectado,
+          os aparelhos já ficam iguais sozinhos; o backup é uma segurança extra.
         </p>
         <div className="grid-2">
           <button className="btn ghost" onClick={download}>Exportar backup</button>

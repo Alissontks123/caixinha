@@ -3,14 +3,12 @@ import { parseRuleDraft, RuleFields, type RuleDraft } from '../components/RuleFi
 import { statusText } from '../components/SyncPanel';
 import { HelpButton } from '../components/TabHelp';
 import { ThemeButton } from '../components/ThemeButton';
-import { StartDateHint } from '../components/RuleFields';
 import { connect, useSyncState } from '../sync/engine';
 import { ErrorBox, Field, MoneyInput, useAction } from '../components/ui';
 import { CATEGORY_COLORS, SPECIAL_CATEGORIES } from '../db/db';
 import { defaultSetupCategories, importBackup, initialize, type SetupInput } from '../db/repo';
-import { startMonthOf } from '../domain/ledger';
 import { centsToInput, parseMoney } from '../lib/money';
-import { monthLabel, todayISO } from '../lib/months';
+import { addMonths, currentMonth, lastDay, monthLabel } from '../lib/months';
 
 interface CatDraft {
   key: string;
@@ -34,12 +32,13 @@ const draftFromDefault = (c: ReturnType<typeof defaultSetupCategories>[number]):
 export function Setup({ onHelp }: { onHelp: () => void }) {
   const sync = useSyncState();
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState(todayISO());
+  // a caixinha conta a partir deste mês; o saldo informado é o do fim do mês anterior
+  const [startMonth, setStartMonth] = useState(currentMonth());
   const [startBalance, setStartBalance] = useState('');
   const [fixed, setFixed] = useState('');
   const [cats, setCats] = useState<CatDraft[]>(() => defaultSetupCategories().map(draftFromDefault));
   const { error, setError, run } = useAction();
-  const startMonth = startMonthOf({ caixinhaStartDate: startDate || todayISO() });
+  const prevMonth = startMonth ? addMonths(startMonth, -1) : '';
 
   const updateCat = (key: string, patch: Partial<CatDraft>) =>
     setCats((cs) => cs.map((c) => (c.key === key ? { ...c, ...patch } : c)));
@@ -60,7 +59,8 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
     const balance = parseMoney(startBalance);
     const fixedAmount = parseMoney(fixed);
     if (!name.trim()) return setError('Informe seu nome.');
-    if (!startDate) return setError('Informe a data do saldo da caixinha.');
+    if (!startMonth) return setError('Escolha a partir de qual mês a caixinha conta.');
+    if (startMonth > currentMonth()) return setError('O início não pode ser depois do mês atual.');
     if (balance === null || balance < 0) return setError('Informe o saldo da caixinha (pode ser 0).');
     if (fixedAmount === null || fixedAmount < 0) return setError('Informe o aporte fixo mensal (pode ser 0).');
     if (cats.length === 0) return setError('Crie pelo menos uma categoria.');
@@ -77,7 +77,7 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
       if (typeof rule === 'string') return setError(`${n}: ${rule}`);
       categories.push({ name: n, color: c.color, ...rule });
     }
-    await run(() => initialize({ name, caixinhaStartDate: startDate, caixinhaStartBalance: balance, fixedAmount, categories }, startMonth));
+    await run(() => initialize({ name, caixinhaStartDate: lastDay(prevMonth), caixinhaStartBalance: balance, fixedAmount, categories }, startMonth));
   };
 
   const restore = async (file: File | undefined) => {
@@ -117,15 +117,18 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
         <section className="card stack">
           <h2>Saldo inicial da Caixinha Nubank</h2>
           <div className="grid-2">
-            <Field label="Data do saldo">
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <Field label="A caixinha conta a partir de">
+              <input type="month" value={startMonth} max={currentMonth()} onChange={(e) => setStartMonth(e.target.value)} />
             </Field>
-            <Field label="Saldo total da caixinha nessa data">
+            <Field label={prevMonth ? `Saldo da caixinha no fim de ${monthLabel(prevMonth)}` : 'Saldo da caixinha'}>
               <MoneyInput value={startBalance} onChange={setStartBalance} />
             </Field>
           </div>
-          <StartDateHint />
-          <Field label="Aporte fixo mensal da caixinha" hint={`Valor que deverá ser aplicado na caixinha todo mês, independente dos gastos (a partir de ${monthLabel(startMonth)}).`}>
+          <p className="field-hint start-hint">
+            Os meses anteriores ao início não entram na conta dos aportes. A partir dele, o app soma as aplicações e os resgates
+            dos extratos e o que faltar aportar num mês passa para o seguinte. Confira o saldo no app do Nubank.
+          </p>
+          <Field label="Aporte fixo mensal da caixinha" hint={`Valor que deverá ser aplicado na caixinha todo mês, independente dos gastos (a partir de ${startMonth ? monthLabel(startMonth) : 'o início'}).`}>
             <MoneyInput value={fixed} onChange={setFixed} />
           </Field>
         </section>

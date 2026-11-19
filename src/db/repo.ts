@@ -3,7 +3,7 @@ import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES,
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
 import type {
-  CaixinhaMovement, Category, Cents, ISODate, KnownCard, Month, Profile, Transaction,
+  CaixinhaMovement, Category, Cents, ISODate, KnownCard, LearnedRule, Month, Profile, Transaction,
 } from '../domain/types';
 import { resolveCategory, type ReviewItem } from '../import/prepare';
 import type { ParsedDocument } from '../import/types';
@@ -101,14 +101,47 @@ export async function saveTransaction(
   });
 }
 
-export async function setTransactionCategory(id: string, categoryId: string) {
-  const tx = await db.transactions.get(id);
-  if (!tx) return;
-  await assertMonthOpen(tx.month);
+/** Ação que pode ser desfeita (o botão "Desfazer" chama a função devolvida). */
+export type Undo = () => Promise<void>;
+
+/**
+ * Troca a categoria de lançamentos (e memoriza o estabelecimento, como sempre).
+ * Devolve como desfazer: volta a categoria de cada lançamento, inclusive dos que a memorização mudou
+ * sozinha, e a regra memorizada anterior.
+ */
+export async function setCategoryForMany(ids: string[], categoryId: string): Promise<Undo> {
+  const txs = (await db.transactions.bulkGet(ids)).filter((t): t is Transaction => !!t);
+  for (const t of txs) await assertMonthOpen(t.month);
+  const before = new Map<string, string>();
+  const rulesBefore = new Map<string, LearnedRule | undefined>();
   await db.transaction('rw', [db.transactions, db.learnedRules, db.closings], async () => {
-    await db.transactions.update(id, { categoryId });
-    if (tx.learnable && tx.matchKey) await learn(tx.matchKey, categoryId, tx.description);
+    const closed = new Set((await db.closings.toArray()).map((c) => c.month));
+    for (const tx of txs) {
+      if (!before.has(tx.id)) before.set(tx.id, tx.categoryId);
+      if (tx.learnable && tx.matchKey && categoryId !== UNIDENTIFIED_ID) {
+        if (!rulesBefore.has(tx.matchKey)) rulesBefore.set(tx.matchKey, await db.learnedRules.get(tx.matchKey));
+        // lançamentos que a memorização vai mudar junto
+        const others = await db.transactions.where({ matchKey: tx.matchKey })
+          .filter((t) => t.categoryId === UNIDENTIFIED_ID && !!t.learnable && !closed.has(t.month)).toArray();
+        for (const o of others) if (!before.has(o.id)) before.set(o.id, o.categoryId);
+      }
+      await db.transactions.update(tx.id, { categoryId });
+      if (tx.learnable && tx.matchKey) await learn(tx.matchKey, categoryId, tx.description);
+    }
   });
+  return async () => {
+    await db.transaction('rw', [db.transactions, db.learnedRules], async () => {
+      for (const [id, cat] of before) await db.transactions.update(id, { categoryId: cat });
+      for (const [key, rule] of rulesBefore) {
+        if (rule) await db.learnedRules.put(rule);
+        else await db.learnedRules.delete(key);
+      }
+    });
+  };
+}
+
+export async function setTransactionCategory(id: string, categoryId: string): Promise<Undo> {
+  return setCategoryForMany([id], categoryId);
 }
 
 /**
@@ -223,11 +256,12 @@ export async function setC6Password(password: string | undefined) {
   await db.profile.update('me', { c6Password: password });
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(id: string): Promise<Undo> {
   const tx = await db.transactions.get(id);
-  if (!tx) return;
+  if (!tx) return async () => undefined;
   await assertMonthOpen(tx.month);
   await db.transactions.delete(id);
+  return async () => { await db.transactions.put(tx); };
 }
 
 async function assertMonthOpen(month: Month) {
@@ -310,11 +344,12 @@ export async function addCaixinhaMovement(m: Omit<CaixinhaMovement, 'id' | 'sour
 }
 
 /** Manual: apaga de vez. Do extrato: fica como desconsiderado (não volta ao reimportar). */
-export async function deleteCaixinhaMovement(id: string) {
+export async function deleteCaixinhaMovement(id: string): Promise<Undo> {
   const m = await db.caixinha.get(id);
-  if (!m) return;
+  if (!m) return async () => undefined;
   if (m.source === 'extrato') await db.caixinha.update(id, { deleted: true });
   else await db.caixinha.delete(id);
+  return async () => { await db.caixinha.put(m); };
 }
 
 export async function restoreCaixinhaMovement(id: string) {

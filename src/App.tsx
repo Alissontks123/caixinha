@@ -81,7 +81,7 @@ export default function App() {
         </nav>
       </header>
       <main className="content page-enter" key={tab}>
-        {tab === 'painel' && <Dashboard data={d} month={month} goToTransactions={goToTransactions} goToCaixinha={() => go('caixinha')} />}
+        {tab === 'painel' && <Dashboard data={d} month={month} setMonth={setMonth} goToTransactions={goToTransactions} goToCaixinha={() => go('caixinha')} goToSettings={() => go('ajustes')} />}
         {tab === 'lancamentos' && <Transactions data={d} month={month} filter={filter} setFilter={setFilter} />}
         {tab === 'importar' && <Import data={d} goToTransactions={(m) => goToTransactions(undefined, m)} />}
         {tab === 'caixinha' && <Caixinha data={d} />}

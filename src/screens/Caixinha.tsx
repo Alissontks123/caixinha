@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ErrorBox, Field, Modal, MoneyInput, useAction } from '../components/ui';
+import { useCallback, useState } from 'react';
+import { ErrorBox, Field, Modal, MoneyInput, UndoToast, useAction, type UndoInfo } from '../components/ui';
 import { addCaixinhaMovement, deleteCaixinhaMovement, restoreCaixinhaMovement } from '../db/repo';
 import { computeLedger, computeStatements } from '../domain/ledger';
 import { summarizeMonth } from '../domain/summary';
@@ -17,6 +17,8 @@ const TYPE_LABEL: Record<CaixinhaMovementType, string> = {
 export function Caixinha({ data }: { data: AppData & { profile: Profile } }) {
   const [adding, setAdding] = useState<CaixinhaMovementType | null>(null);
   const { error, run } = useAction();
+  const [undo, setUndo] = useState<UndoInfo | null>(null);
+  const closeUndo = useCallback(() => setUndo(null), []);
   const today = todayISO();
   const ledger = computeLedger({
     profile: data.profile,
@@ -134,13 +136,15 @@ export function Caixinha({ data }: { data: AppData & { profile: Profile } }) {
                   <button
                     className="icon-btn"
                     aria-label="Excluir movimentação"
-                    onClick={() =>
-                      window.confirm(
-                        m.source === 'extrato'
-                          ? 'Desconsiderar esta movimentação do extrato? Ela não voltará ao reimportar o extrato (dá para restaurar abaixo).'
-                          : 'Excluir esta movimentação?',
-                      ) && run(() => deleteCaixinhaMovement(m.id))
-                    }
+                    onClick={async () => {
+                      let undoFn: (() => Promise<void>) | undefined;
+                      if (await run(async () => { undoFn = await deleteCaixinhaMovement(m.id); })) {
+                        setUndo({
+                          message: m.source === 'extrato' ? 'Movimentação desconsiderada (não volta ao reimportar).' : 'Movimentação excluída.',
+                          undo: async () => { await undoFn?.(); },
+                        });
+                      }
+                    }}
                   >×</button>
                 </div>
               );
@@ -167,6 +171,7 @@ export function Caixinha({ data }: { data: AppData & { profile: Profile } }) {
       </section>
 
       {adding && <MovementForm type={adding} onClose={() => setAdding(null)} />}
+      <UndoToast info={undo} onClose={closeUndo} />
     </div>
   );
 }

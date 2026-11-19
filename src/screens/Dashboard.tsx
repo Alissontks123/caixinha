@@ -7,17 +7,19 @@ import type { Month, Profile } from '../domain/types';
 import { formatMoney } from '../lib/money';
 import { addMonths, currentMonth, dateLabel, monthLabel, monthShort, todayISO } from '../lib/months';
 import { monthStatus } from '../domain/alerts';
-import { computeLedger, computeStatements } from '../domain/ledger';
+import { computeLedger, computeStatements, startMonthOf } from '../domain/ledger';
 import { summaryInput, type AppData } from '../useAppData';
 
 interface Props {
   data: AppData & { profile: Profile };
   month: Month;
+  setMonth: (m: Month) => void;
   goToTransactions: (filter?: string) => void;
   goToCaixinha: () => void;
+  goToSettings: () => void;
 }
 
-export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props) {
+export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinha, goToSettings }: Props) {
   const summary = summarizeMonth(month, summaryInput(data));
   const statuses = summary.closed ? [] : monthStatus(summary, data.profile.alertThreshold);
   const ledger = computeLedger({
@@ -31,6 +33,12 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
     month,
     (m) => (m === month ? summary.overflowTotal : summarizeMonth(m, summaryInput(data)).overflowTotal),
   ).find((s) => s.month === month);
+
+  const startMonth = startMonthOf(data.profile);
+  const beforeStart = month < startMonth;
+  // lembrete: o mês anterior já terminou e ainda não foi fechado
+  const prevMonth = addMonths(currentMonth(), -1);
+  const closeReminder = month === currentMonth() && prevMonth >= startMonth && !data.closings.some((c) => c.month === prevMonth);
 
   // comemoração: uma vez por mês, quando o que falta aportar chega a zero (só no mês atual e no anterior)
   const quitado = !!statement && statement.total > 0 && statement.remaining <= 0 && month >= addMonths(currentMonth(), -1);
@@ -69,6 +77,29 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
 
   return (
     <div className="stack">
+      {beforeStart && (
+        <section className="card alert-banner info-surface">
+          <div className="alert-line">
+            <span className="alert-icon info" aria-hidden>i</span>
+            <span>
+              {monthLabel(month)} é anterior ao início da caixinha ({monthLabel(startMonth)}): os aportes deste mês não entram na conta.
+              Os gastos aparecem só para consulta.
+            </span>
+          </div>
+          <button className="btn ghost small" onClick={goToSettings}>Mudar o início</button>
+        </section>
+      )}
+
+      {closeReminder && (
+        <section className="card alert-banner info-surface">
+          <div className="alert-line">
+            <span className="alert-icon info" aria-hidden>✓</span>
+            <span><b>{monthLabel(prevMonth)} terminou.</b> Confira os lançamentos e feche o mês para os aportes passarem a valer.</span>
+          </div>
+          <button className="btn ghost small" onClick={() => setMonth(prevMonth)}>Ir para {monthLabel(prevMonth).split(' ')[0]}</button>
+        </section>
+      )}
+
       {overdueTotal > 0 && (
         <section className="card alert-banner warn-surface">
           <div className="alert-line">
@@ -97,44 +128,46 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
         </section>
       )}
 
+      {!beforeStart && (
       <section className="card hero">
-        <div className="hero-top">
-          <span className={`badge ${summary.closed ? 'closed' : 'open'}`}>
-            {summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}
-          </span>
-        </div>
-        <p className="hero-label">Aportes necessários no mês</p>
-        {statement ? (
-          <>
-            <p className="hero-value"><CountUp cents={Math.max(statement.total, 0)} /></p>
-            <dl className="hero-lines">
-              <dt>Fixo devido</dt><dd>{formatMoney(statement.fixed)}</dd>
-              <dt>Gastos excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''}</dt>
-              <dd>{formatMoney(statement.overflow)}</dd>
-              {statement.resgates > 0 && <><dt>Resgates a repor</dt><dd>{formatMoney(statement.resgates)}</dd></>}
-              {statement.previous >= 0
-                ? <><dt>Meses anteriores</dt><dd>{formatMoney(statement.previous)}</dd></>
-                : <><dt>Crédito de meses anteriores</dt><dd className="refund">−{formatMoney(-statement.previous)}</dd></>}
-            </dl>
-            <p className="hero-foot small">
-              Já aportado: <b>{formatMoney(statement.paid)}</b> ·{' '}
-              {statement.remaining > 0
-                ? <>Falta: <b className="text-danger">{formatMoney(statement.remaining)}</b></>
-                : statement.remaining < 0
-                  ? <span className="text-ok">Quitado, com crédito de <b>{formatMoney(-statement.remaining)}</b> para os próximos meses</span>
-                  : <b className="text-ok">Quitado</b>}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="hero-value"><CountUp cents={summary.totalDue} /></p>
-            <dl className="hero-lines">
-              <dt>Fixo devido</dt><dd>{formatMoney(summary.fixed)}</dd>
-              <dt>Gastos excedentes</dt><dd>{formatMoney(summary.overflowTotal)}</dd>
-            </dl>
-          </>
-        )}
-      </section>
+          <div className="hero-top">
+            <span className={`badge ${summary.closed ? 'closed' : 'open'}`}>
+              {summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}
+            </span>
+          </div>
+          <p className="hero-label">Aportes necessários no mês</p>
+          {statement ? (
+            <>
+              <p className="hero-value"><CountUp cents={Math.max(statement.total, 0)} /></p>
+              <dl className="hero-lines">
+                <dt>Fixo devido</dt><dd>{formatMoney(statement.fixed)}</dd>
+                <dt>Gastos excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''}</dt>
+                <dd>{formatMoney(statement.overflow)}</dd>
+                {statement.resgates > 0 && <><dt>Resgates a repor</dt><dd>{formatMoney(statement.resgates)}</dd></>}
+                {statement.previous >= 0
+                  ? <><dt>Meses anteriores</dt><dd>{formatMoney(statement.previous)}</dd></>
+                  : <><dt>Crédito de meses anteriores</dt><dd className="refund">−{formatMoney(-statement.previous)}</dd></>}
+              </dl>
+              <p className="hero-foot small">
+                Já aportado: <b>{formatMoney(statement.paid)}</b> ·{' '}
+                {statement.remaining > 0
+                  ? <>Falta: <b className="text-danger">{formatMoney(statement.remaining)}</b></>
+                  : statement.remaining < 0
+                    ? <span className="text-ok">Quitado, com crédito de <b>{formatMoney(-statement.remaining)}</b> para os próximos meses</span>
+                    : <b className="text-ok">Quitado</b>}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="hero-value"><CountUp cents={summary.totalDue} /></p>
+              <dl className="hero-lines">
+                <dt>Fixo devido</dt><dd>{formatMoney(summary.fixed)}</dd>
+                <dt>Gastos excedentes</dt><dd>{formatMoney(summary.overflowTotal)}</dd>
+              </dl>
+            </>
+          )}
+        </section>
+      )}
 
       {summary.unidentifiedCount > 0 && (
         <button className="card warn-card" onClick={() => goToTransactions(unidentifiedId)}>

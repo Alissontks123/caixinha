@@ -60,8 +60,8 @@ async function device(browser, name) {
 async function setup(page, name, txDesc) {
   await page.getByText('Bem-vindo(a)!').waitFor();
   await page.getByLabel('Seu nome').fill(name);
-  await page.getByLabel('Data do saldo').fill('2026-10-31');
-  await page.getByLabel('Saldo total da caixinha nessa data').fill('500');
+  await page.getByLabel('A caixinha conta a partir de').fill('2026-11');
+  await page.getByLabel(/Saldo da caixinha no fim de/).fill('500');
   await page.getByLabel('Aporte fixo mensal').fill('200');
   await page.getByRole('button', { name: 'Começar' }).click();
   await page.getByText('Aportes necessários no mês').waitFor();

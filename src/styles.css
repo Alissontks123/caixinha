@@ -542,3 +542,32 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
   .celebrate-layer { display: none; }
 }
 .stagger-item { animation: rise 0.4s var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 10) * 45ms); }
+
+/* aviso "Desfazer" (fica embaixo; o aviso de limite sobe quando os dois aparecem juntos) */
+.undo-toast { align-items: center; animation: toastIn 0.3s var(--ease-out) both; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.undo-btn { background: none; border: 0; color: inherit; font-weight: 800; white-space: nowrap; margin-left: auto; text-decoration: underline; }
+.undo-toast .undo-btn + button { margin-left: 4px; }
+.toast.raised { bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+/* busca na aba Gastos */
+.search-box {
+  display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 99px;
+}
+.search-box input { flex: 1; min-width: 0; border: 0 !important; background: transparent; padding: 10px 0 !important; outline: none; }
+.search-box:focus-within { outline: 2px solid var(--primary); outline-offset: -1px; }
+.search-box .icon-btn { width: 30px; height: 30px; font-size: 1.1rem; }
+
+/* seleção de vários lançamentos */
+.tx-row.selecting { grid-template-columns: auto 1fr auto; grid-template-areas: 'check main amount'; cursor: pointer; }
+.tx-check { grid-area: check; width: 20px; height: 20px; accent-color: var(--primary); }
+.tx-row.selected { background: var(--primary-soft); }
+.bulk-bar {
+  position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 6;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--hero-border); border-radius: 16px; padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(60, 50, 120, 0.16); animation: rise 0.3s var(--ease-out) both;
+}
+.bulk-bar select { min-width: 0; }
+.info-surface { background: var(--primary-soft); border-color: transparent; }

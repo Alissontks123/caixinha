@@ -8,8 +8,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
     title: 'Como preencher a configuração',
     body: (
       <>
-        <p><b>Saldo inicial da Caixinha Nubank:</b> informe quanto havia na caixinha ao final de um dia. Use o último dia do mês anterior:
-          as aplicações e os resgates dos extratos só contam a partir dessa data.</p>
+        <p><b>Saldo inicial da Caixinha Nubank:</b> escolha a partir de qual mês a caixinha conta e informe o saldo dela no fim
+          do mês anterior. Os meses antes do início não entram na conta dos aportes.</p>
         <p><b>Aporte fixo mensal da caixinha:</b> valor que deve ser aplicado na caixinha todo mês, independente dos gastos.</p>
         <p><b>Categorias:</b> preencha os valores de cada uma. Quando os gastos do mês passam do limite, os gastos excedentes contam em blocos
           (um bloco incompleto conta como inteiro), e cada bloco gera um aporte na caixinha.</p>

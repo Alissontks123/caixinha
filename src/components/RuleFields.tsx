@@ -52,13 +52,3 @@ export function parseRuleDraft(d: RuleDraft): RuleValues | string {
   if (blockAmount === null || blockAmount < 0) return 'Informe o valor a ser aportado (pode ser 0).';
   return { contributes: true, limit, blockSize, blockAmount };
 }
-
-/** Dica da data do saldo inicial, mostrada abaixo dos campos de data e saldo (ocupa a largura toda). */
-export function StartDateHint() {
-  return (
-    <p className="field-hint start-hint">
-      Saldo ao final deste dia.<br />
-      Dica: use o último dia do mês anterior, pois o sistema contará os aportes da caixinha com base nos extratos a partir dessa data.
-    </p>
-  );
-}

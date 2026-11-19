@@ -79,14 +79,14 @@ export function useAction() {
 }
 
 /** Aviso rápido no rodapé, some sozinho depois de alguns segundos. */
-export function Toast({ messages, onClose }: { messages: string[]; onClose: () => void }) {
+export function Toast({ messages, onClose, raised }: { messages: string[]; onClose: () => void; raised?: boolean }) {
   useEffect(() => {
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
   }, [messages, onClose]);
   if (!messages.length) return null;
   return (
-    <div className="toast" role="status">
+    <div className={`toast ${raised ? 'raised' : ''}`} role="status">
       <span className="alert-icon near" aria-hidden>!</span>
       <div>{messages.map((m) => <div key={m}>{m}</div>)}</div>
       <button aria-label="Fechar aviso" onClick={onClose}>×</button>
@@ -191,6 +191,37 @@ export function Celebration({ title, detail, onDone }: { title: string; detail?:
         <b>{title}</b>
         {detail && <span className="muted small">{detail}</span>}
       </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** Ação recém-feita que pode ser desfeita: mostra o aviso com o botão "Desfazer" por alguns segundos. */
+export interface UndoInfo { message: string; undo: () => Promise<void> }
+
+export function UndoToast({ info, onClose }: { info: UndoInfo | null; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!info) return;
+    const t = setTimeout(() => close.current(), 6000);
+    return () => clearTimeout(t);
+  }, [info]);
+  if (!info) return null;
+  return createPortal(
+    <div className="toast undo-toast" role="status">
+      <span>{info.message}</span>
+      <button
+        type="button"
+        className="undo-btn"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try { await info.undo(); } finally { setBusy(false); close.current(); }
+        }}
+      >↶ Desfazer</button>
+      <button type="button" aria-label="Fechar aviso" onClick={() => close.current()}>×</button>
     </div>,
     document.body,
   );

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import { MerchantHint } from '../components/MerchantHint';
-import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, useAction } from '../components/ui';
+import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, UndoToast, useAction, type UndoInfo } from '../components/ui';
 import { UNIDENTIFIED_ID } from '../db/db';
-import { deleteTransaction, saveTransaction, setTransactionCategory } from '../db/repo';
+import { deleteTransaction, saveTransaction, setCategoryForMany } from '../db/repo';
+import { normalizeText } from '../domain/categorize';
 import { alertsForChange, describeAlert } from '../domain/alerts';
 import { describeShare, myAmount, shareOf } from '../domain/share';
 import type { Category, Month, Share, Transaction } from '../domain/types';
@@ -29,18 +30,30 @@ const SOURCE_LABEL: Record<Transaction['source'], string> = {
 export function Transactions({ data, month, filter, setFilter }: Props) {
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null);
   const [toast, setToast] = useState<string[]>([]);
+  const [undo, setUndo] = useState<UndoInfo | null>(null);
+  const [query, setQuery] = useState('');
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkCat, setBulkCat] = useState('');
   const closeToast = useCallback(() => setToast([]), []);
+  const closeUndo = useCallback(() => setUndo(null), []);
   const { error, run } = useAction();
   // avisa quando a mudança abre um novo bloco de aporte ou deixa a categoria perto do limite
   const notify: Notify = (after, months) => {
     const alerts = alertsForChange(summaryInput(data), after, months, data.profile.alertThreshold);
     if (alerts.length) setToast(alerts.map(describeAlert));
   };
-  const closed = data.closings.some((c) => c.month === month);
+  const closedMonths = new Set(data.closings.map((c) => c.month));
+  const closed = closedMonths.has(month);
   const catById = new Map(data.categories.map((c) => [c.id, c]));
 
+  // com busca: todos os meses; sem busca: só o mês escolhido
+  const q = normalizeText(query.trim());
+  const searching = q.length > 0;
   const all = data.transactions
-    .filter((t) => t.month === month)
+    .filter((t) => (searching
+      ? normalizeText(`${t.description} ${t.note ?? ''} ${catById.get(t.categoryId)?.name ?? ''}`).includes(q)
+      : t.month === month))
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const list = filter ? all.filter((t) => t.categoryId === filter) : all;
   const total = list.reduce((s, t) => s + myAmount(t), 0);
@@ -56,8 +69,40 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
     else groups.push({ date: t.date, items: [t] });
   }
 
+  const changeCategory = async (ids: string[], categoryId: string) => {
+    const name = catById.get(categoryId)?.name ?? '';
+    let undoFn: (() => Promise<void>) | undefined;
+    if (await run(async () => { undoFn = await setCategoryForMany(ids, categoryId); })) {
+      setUndo({
+        message: ids.length === 1 ? `Movido para ${name}.` : `${ids.length} lançamentos movidos para ${name}.`,
+        undo: async () => { await undoFn?.(); },
+      });
+      const months = [...new Set(data.transactions.filter((x) => ids.includes(x.id)).map((x) => x.month))];
+      notify(data.transactions.map((x) => (ids.includes(x.id) ? { ...x, categoryId } : x)), months);
+    }
+  };
+  const toggle = (id: string) => setSelected((s) => {
+    const next = new Set(s);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const stopSelecting = () => { setSelecting(false); setSelected(new Set()); setBulkCat(''); };
+  const selectable = list.filter((t) => !closedMonths.has(t.month));
+
   return (
     <div className="stack">
+      <div className="search-box">
+        <span aria-hidden>🔍</span>
+        <input
+          type="search"
+          value={query}
+          placeholder="Buscar em todos os meses"
+          aria-label="Buscar lançamentos em todos os meses"
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {query && <button type="button" className="icon-btn" aria-label="Limpar busca" onClick={() => setQuery('')}>×</button>}
+      </div>
+
       <ScrollRow label="Filtrar por categoria" activeKey={filter ?? 'todos'}>
         <button className={`chip ${!filter ? 'active' : ''}`} onClick={() => setFilter(undefined)}>Todos ({all.length})</button>
         {data.categories.map((c) => (
@@ -67,7 +112,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
         ))}
       </ScrollRow>
 
-      {closed ? (
+      {searching ? null : closed ? (
         <p className="card muted small">Este mês está fechado. Reabra-o no Painel para alterar lançamentos.</p>
       ) : (
         <button className="btn primary" onClick={() => setEditing('new')}>+ Novo lançamento</button>
@@ -75,20 +120,43 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
       <ErrorBox error={error} />
 
       {list.length === 0 ? (
-        <p className="empty">Nenhum lançamento {filter ? 'nesta categoria ' : ''}neste mês.</p>
+        <p className="empty">
+          {searching ? `Nada encontrado para "${query.trim()}".` : `Nenhum lançamento ${filter ? 'nesta categoria ' : ''}neste mês.`}
+        </p>
       ) : (
         <>
-          <p className="muted small">{list.length} lançamento(s) · total {formatMoney(total)}</p>
-          <div className="stack-sm stagger" key={`${month}|${filter ?? 'todos'}`}>
+          <div className="row-between">
+            <p className="muted small">
+              {list.length} lançamento(s){searching ? ' em todos os meses' : ''} · total {formatMoney(total)}
+            </p>
+            {selectable.length > 0 && (
+              selecting
+                ? <button className="btn ghost small" onClick={stopSelecting}>Cancelar</button>
+                : <button className="btn ghost small" onClick={() => setSelecting(true)}>Selecionar</button>
+            )}
+          </div>
+          <div className="stack-sm stagger" key={`${month}|${filter ?? 'todos'}|${q}`}>
           {groups.map((g, i) => (
             <section key={g.date} className="tx-group" style={{ ['--i' as string]: i }}>
               <h3 className="tx-date">{dateLabel(g.date)}</h3>
               <div className="card tx-list">
                 {g.items.map((t) => {
                   const cat = catById.get(t.categoryId);
+                  const rowClosed = closedMonths.has(t.month);
+                  const isSel = selected.has(t.id);
                   return (
-                    <div key={t.id} className="tx-row">
-                      <button className="tx-main" disabled={closed} onClick={() => setEditing(t)}>
+                    <div key={t.id} className={`tx-row ${selecting ? 'selecting' : ''} ${isSel ? 'selected' : ''}`}>
+                      {selecting && (
+                        <input
+                          type="checkbox"
+                          className="tx-check"
+                          checked={isSel}
+                          disabled={rowClosed}
+                          aria-label={`Selecionar ${t.description}`}
+                          onChange={() => toggle(t.id)}
+                        />
+                      )}
+                      <button className="tx-main" disabled={rowClosed} onClick={() => (selecting ? toggle(t.id) : setEditing(t))}>
                         <span className="tx-desc">{t.description}</span>
                         <span className="tx-meta muted small">
                           {[
@@ -102,18 +170,16 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                         </span>
                       </button>
                       <span className={`tx-amount ${t.amount < 0 ? 'refund' : ''}`}>{formatMoney(myAmount(t))}</span>
-                      <CategorySelect
-                        categories={data.categories}
-                        value={t.categoryId}
-                        color={cat?.color}
-                        disabled={closed}
-                        onChange={async (id) => {
-                          if (await run(() => setTransactionCategory(t.id, id))) {
-                            notify(data.transactions.map((x) => (x.id === t.id ? { ...x, categoryId: id } : x)), [t.month]);
-                          }
-                        }}
-                      />
-                      {t.categoryId === UNIDENTIFIED_ID && <MerchantHint text={t.description} />}
+                      {!selecting && (
+                        <CategorySelect
+                          categories={data.categories}
+                          value={t.categoryId}
+                          color={cat?.color}
+                          disabled={rowClosed}
+                          onChange={(id) => changeCategory([t.id], id)}
+                        />
+                      )}
+                      {!selecting && t.categoryId === UNIDENTIFIED_ID && <MerchantHint text={t.description} />}
                     </div>
                   );
                 })}
@@ -122,6 +188,21 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
           ))}
           </div>
         </>
+      )}
+
+      {selecting && (
+        <div className="bulk-bar">
+          <span className="small"><b>{selected.size}</b> selecionado(s)</span>
+          <select value={bulkCat} onChange={(e) => setBulkCat(e.target.value)} aria-label="Categoria para os selecionados">
+            <option value="">Mover para…</option>
+            {data.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button
+            className="btn primary small"
+            disabled={!bulkCat || selected.size === 0}
+            onClick={async () => { await changeCategory([...selected], bulkCat); stopSelecting(); }}
+          >Aplicar</button>
+        </div>
       )}
 
       {editing && (
@@ -135,9 +216,11 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
             [...data.transactions.filter((x) => x.id !== tx.id), tx],
             [tx.month, ...(editing !== 'new' ? [editing.month] : [])],
           )}
+          onDeleted={(info) => setUndo(info)}
         />
       )}
-      <Toast messages={toast} onClose={closeToast} />
+      <Toast messages={toast} onClose={closeToast} raised={!!undo} />
+      <UndoToast info={undo} onClose={closeUndo} />
     </div>
   );
 }
@@ -160,7 +243,7 @@ function CategorySelect({
 }
 
 function TransactionForm({
-  categories, month, initial, defaultCategory, onClose, onSaved,
+  categories, month, initial, defaultCategory, onClose, onSaved, onDeleted,
 }: {
   categories: Category[];
   month: Month;
@@ -168,6 +251,7 @@ function TransactionForm({
   defaultCategory?: string;
   onClose: () => void;
   onSaved: (tx: Transaction) => void;
+  onDeleted: (info: UndoInfo) => void;
 }) {
   const defaultDate = month === currentMonth() ? todayISO() : `${month}-01`;
   const [date, setDate] = useState(initial?.date ?? defaultDate);
@@ -209,8 +293,12 @@ function TransactionForm({
   };
 
   const remove = async () => {
-    if (!initial || !window.confirm(`Excluir "${initial.description}"?`)) return;
-    if (await run(() => deleteTransaction(initial.id))) onClose();
+    if (!initial) return;
+    let undoFn: (() => Promise<void>) | undefined;
+    if (await run(async () => { undoFn = await deleteTransaction(initial.id); })) {
+      onDeleted({ message: `"${initial.description}" excluído.`, undo: async () => { await undoFn?.(); } });
+      onClose();
+    }
   };
 
   return (
