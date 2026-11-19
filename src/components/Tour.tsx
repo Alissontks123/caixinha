@@ -17,7 +17,23 @@ const isInstalled = () =>
   (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
 
 const STEPS = (): Step[] => [
-  { tab: 'painel', title: 'Boas-vindas à Caixinha!', body: <p>Vamos conhecer o app em 1 minuto. Use <b>Próximo</b> para avançar ou <b>Pular</b> para fechar. Dá para rever depois no botão <b>▶</b> do topo.</p> },
+  {
+    tab: 'painel',
+    title: 'Para que serve a Caixinha',
+    body: (
+      <>
+        <p>Um jeito simples de controlar os gastos e transformar exageros em economia:</p>
+        <ol>
+          <li>Você importa as faturas e extratos, e o app separa os gastos por categoria.</li>
+          <li>Cada categoria tem um limite por mês.</li>
+          <li>O que passar do limite vira um aporte obrigatório na sua Caixinha do Nubank.</li>
+          <li>Todo mês também há um aporte fixo, independente dos gastos.</li>
+        </ol>
+        <p>Assim, quanto mais você gasta além do combinado, mais você guarda.</p>
+        <p className="muted">Use <b>Próximo</b> para conhecer o app ou <b>Pular</b> para fechar. Dá para rever depois no botão <b>▶</b> do topo.</p>
+      </>
+    ),
+  },
   {
     tab: 'painel',
     title: 'Instale no celular',
