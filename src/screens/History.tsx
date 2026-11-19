@@ -8,7 +8,9 @@ import type { Month } from '../domain/types';
 import { reportFileName, buildReport } from '../export/report';
 import { NEUTRAL, useDarkMode } from '../lib/colors';
 import { downloadBlob } from '../lib/download';
-import { currentMonth, todayISO } from '../lib/months';
+import { currentMonth, monthLabel, todayISO } from '../lib/months';
+import { formatMoney } from '../lib/money';
+import { futureByMonth, futureInstallments } from '../domain/insights';
 import { summaryInput, type ReadyData } from '../useAppData';
 
 const RANGES: { id: RangeKey; label: string }[] = [
@@ -64,6 +66,8 @@ export function History({ data }: { data: ReadyData }) {
       <DueVsPaidChart rows={dueRows} dark={dark} />
       <BalanceChart points={balance} dark={dark} />
 
+      <UpcomingInstallments data={data} />
+
       <ExportSection data={data} />
     </div>
   );
@@ -111,6 +115,28 @@ function ExportSection({ data }: { data: ReadyData }) {
         <button className="btn ghost" disabled={!!busy} onClick={() => run('xlsx')}>{busy === 'xlsx' ? 'Gerando…' : 'Baixar Excel'}</button>
       </div>
       <ErrorBox error={error} />
+    </section>
+  );
+}
+
+/** Quanto das próximas faturas já está comprometido por compras parceladas. */
+function UpcomingInstallments({ data }: { data: ReadyData }) {
+  const months = futureByMonth(futureInstallments(data.transactions), currentMonth(), 6);
+  const max = Math.max(...months.map((m) => m.total), 1);
+  if (months.every((m) => m.total === 0)) return null;
+  return (
+    <section className="card stack-sm">
+      <h2 className="card-title">Parcelas dos próximos meses</h2>
+      <p className="muted small">Compras parceladas que ainda vão cair nas faturas (só a sua parte). Toque num mês no Painel para ver o detalhe.</p>
+      <ul className="item-list">
+        {months.map((m) => (
+          <li key={m.month} className="upcoming-row">
+            <span>{monthLabel(m.month)}<span className="muted small"> · {m.items.length} parcela(s)</span></span>
+            <span className="upcoming-bar" aria-hidden><i style={{ width: `${(m.total / max) * 100}%` }} /></span>
+            <b>{formatMoney(m.total)}</b>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

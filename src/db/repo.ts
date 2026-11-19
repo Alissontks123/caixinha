@@ -1,4 +1,5 @@
 import { installmentNumber, sameInstallmentPurchase } from '../domain/share';
+import { recurringKey } from '../domain/insights';
 import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES, UNIDENTIFIED_ID, db } from './db';
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
@@ -254,6 +255,11 @@ export async function setCardMine(id: string, mine: boolean) {
 
 export async function setC6Password(password: string | undefined) {
   await db.profile.update('me', { c6Password: password });
+}
+
+/** Deixa de tratar um estabelecimento como recorrente (tira a marca de todos os lançamentos dele). */
+export async function clearRecurring(key: string) {
+  await db.transactions.filter((t) => !!t.recurring && recurringKey(t) === key).modify({ recurring: undefined });
 }
 
 export async function deleteTransaction(id: string): Promise<Undo> {

@@ -66,6 +66,8 @@ export interface Transaction {
   installment?: string;
   /** Gasto dividido com outras pessoas: só a parte do usuário conta (ver `myAmount`). */
   share?: Share;
+  /** Gasto que se repete todo mês (assinatura, conta fixa…). Vale para o estabelecimento (ver `recurringKey`). */
+  recurring?: boolean;
 }
 
 /** Como o gasto foi dividido. Os valores sempre descrevem a parte do usuário. */
@@ -141,6 +143,9 @@ export interface Profile {
   /** Percentual do limite a partir do qual a categoria fica em alerta. */
   alertThreshold: number;
   createdAt: number;
+  /** Meta da caixinha: juntar este valor (saldo estimado) até o mês indicado. */
+  goalAmount?: Cents;
+  goalMonth?: Month;
   /** Senha da fatura C6 (6 primeiros dígitos do CPF), salva só neste aparelho/conta. */
   c6Password?: string;
 }

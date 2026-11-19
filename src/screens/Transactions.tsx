@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import { MerchantHint } from '../components/MerchantHint';
 import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, UndoToast, useAction, type UndoInfo } from '../components/ui';
 import { UNIDENTIFIED_ID } from '../db/db';
-import { deleteTransaction, saveTransaction, setCategoryForMany } from '../db/repo';
+import { clearRecurring, deleteTransaction, saveTransaction, setCategoryForMany } from '../db/repo';
+import { recurringKey } from '../domain/insights';
 import { normalizeText } from '../domain/categorize';
 import { alertsForChange, describeAlert } from '../domain/alerts';
 import { describeShare, myAmount, shareOf } from '../domain/share';
@@ -210,6 +211,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
           categories={data.categories}
           month={month}
           initial={editing === 'new' ? undefined : editing}
+          recurringKeys={new Set(data.transactions.filter((t) => t.recurring).map(recurringKey))}
           defaultCategory={filter}
           onClose={() => setEditing(null)}
           onSaved={(tx) => notify(
@@ -243,7 +245,7 @@ function CategorySelect({
 }
 
 function TransactionForm({
-  categories, month, initial, defaultCategory, onClose, onSaved, onDeleted,
+  categories, month, initial, defaultCategory, onClose, onSaved, onDeleted, recurringKeys,
 }: {
   categories: Category[];
   month: Month;
@@ -252,6 +254,7 @@ function TransactionForm({
   onClose: () => void;
   onSaved: (tx: Transaction) => void;
   onDeleted: (info: UndoInfo) => void;
+  recurringKeys: Set<string>;
 }) {
   const defaultDate = month === currentMonth() ? todayISO() : `${month}-01`;
   const [date, setDate] = useState(initial?.date ?? defaultDate);
@@ -262,6 +265,8 @@ function TransactionForm({
     initial?.categoryId ?? defaultCategory ?? categories.find((c) => c.kind === 'unidentified')?.id ?? categories[0]?.id,
   );
   const [note, setNote] = useState(initial?.note ?? '');
+  const wasRecurring = !!initial && recurringKeys.has(recurringKey(initial));
+  const [recurring, setRecurring] = useState(wasRecurring);
   const [split, setSplit] = useState<SplitDraft>(() => splitDraftOf(initial?.share));
   const { error, setError, run } = useAction();
 
@@ -283,9 +288,14 @@ function TransactionForm({
       categoryId,
       source: initial?.source ?? 'manual',
       note: note.trim() || undefined,
+      recurring: recurring || undefined,
       share,
     };
-    const ok = await run(() => saveTransaction(draft));
+    const ok = await run(async () => {
+      await saveTransaction(draft);
+      // desmarcou: o estabelecimento deixa de ser recorrente em todos os meses
+      if (wasRecurring && !recurring && initial) await clearRecurring(recurringKey(initial));
+    });
     if (ok) {
       onSaved({ ...initial, ...draft, id: initial?.id ?? '__novo__', createdAt: initial?.createdAt ?? Date.now() });
       onClose();
@@ -320,6 +330,11 @@ function TransactionForm({
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
+        <label className="switch-row">
+          <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
+          <span className="switch" aria-hidden />
+          <span>Repete todo mês <span className="muted small">(assinatura, conta fixa…)</span></span>
+        </label>
         <Field label="Observação (opcional)">
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>

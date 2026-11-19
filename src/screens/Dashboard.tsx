@@ -8,6 +8,8 @@ import { formatMoney } from '../lib/money';
 import { addMonths, currentMonth, dateLabel, monthLabel, monthShort, todayISO } from '../lib/months';
 import { monthStatus } from '../domain/alerts';
 import { computeLedger, computeStatements, startMonthOf } from '../domain/ledger';
+import { myAmount } from '../domain/share';
+import { changeVsPrevious, forecastMonth, futureInstallments, recurringStatus } from '../domain/insights';
 import { summaryInput, type AppData } from '../useAppData';
 
 interface Props {
@@ -21,6 +23,39 @@ interface Props {
 
 export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinha, goToSettings }: Props) {
   const summary = summarizeMonth(month, summaryInput(data));
+  const prevSummary = summarizeMonth(addMonths(month, -1), summaryInput(data));
+  const prevSpent = new Map(prevSummary.categories.map((c) => [c.categoryId, c.spent]));
+  const prevName = monthLabel(addMonths(month, -1)).split(' ')[0];
+  const today = todayISO();
+  const isFuture = month > currentMonth();
+  const future = isFuture ? futureInstallments(data.transactions).filter((f) => f.month === month) : [];
+  const futureTotal = future.reduce((s, f) => s + f.amount, 0);
+  const catName = new Map(data.categories.map((c) => [c.id, c.name]));
+  const recurring = isFuture ? [] : recurringStatus(data.transactions, month);
+  const recurringSeen = recurring.filter((r) => r.state !== 'missing').length;
+
+  /** Linha de comparação com o mês anterior e previsão até o fim do mês. */
+  const insights = (categoryId: string, spent: number, limit?: number) => {
+    const change = changeVsPrevious(spent, prevSpent.get(categoryId) ?? 0);
+    const forecast = forecastMonth(spent, month, today);
+    if (change === undefined && forecast === undefined) return null;
+    return (
+      <p className="cat-insight small">
+        {change !== undefined && Math.abs(change) >= 0.01 && (
+          <span className={change > 0 ? 'up' : 'down'}>
+            {change > 0 ? '↑' : '↓'} {Math.round(Math.abs(change) * 100)}% em relação a {prevName}
+          </span>
+        )}
+        {change !== undefined && Math.abs(change) < 0.01 && <span>= igual a {prevName}</span>}
+        {forecast !== undefined && forecast > spent && (
+          <span className={limit !== undefined && forecast > limit && spent <= limit ? 'warn' : ''}>
+            No ritmo atual, deve fechar em {formatMoney(forecast)}
+            {limit !== undefined && forecast > limit && spent <= limit ? ' (acima do limite)' : ''}
+          </span>
+        )}
+      </p>
+    );
+  };
   const statuses = summary.closed ? [] : monthStatus(summary, data.profile.alertThreshold);
   const ledger = computeLedger({
     profile: data.profile, fixedVersions: data.fixedVersions, closings: data.closings, movements: data.movements, today: todayISO(),
@@ -176,6 +211,50 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
         </button>
       )}
 
+      {isFuture && future.length > 0 && (
+        <section className="card stack-sm">
+          <div className="row-between">
+            <h2 className="card-title">Parcelas já previstas</h2>
+            <b>{formatMoney(futureTotal)}</b>
+          </div>
+          <p className="muted small">Compras parceladas que ainda vão cair na fatura de {monthLabel(month)} (só a sua parte).</p>
+          <ul className="item-list">
+            {future.map((f, i) => (
+              <li key={i}>
+                <span>{f.description}<span className="muted small"> · {f.installment} · {catName.get(f.categoryId) ?? ''}</span></span>
+                <b>{formatMoney(f.amount)}</b>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recurring.length > 0 && (
+        <section className="card stack-sm">
+          <div className="row-between">
+            <h2 className="card-title">Gastos recorrentes</h2>
+            <span className="small muted">{recurringSeen} de {recurring.length} já apareceram</span>
+          </div>
+          <ul className="item-list">
+            {recurring.map((r) => (
+              <li key={r.key}>
+                <span>
+                  <span className={`rec-dot ${r.state}`} aria-hidden />
+                  {r.description}
+                  <span className="muted small">
+                    {r.state === 'missing' && ' · ainda não apareceu neste mês'}
+                    {r.state === 'changed' && r.previous && ` · antes ${formatMoney(myAmount(r.previous))}`}
+                  </span>
+                </span>
+                <b className={r.state === 'changed' ? 'text-warn' : r.state === 'missing' ? 'muted' : ''}>
+                  {formatMoney(myAmount(r.current ?? r.previous!))}
+                </b>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="stack-sm stagger" key={month}>
         {summary.categories.map((c, i) => {
           const order = { ['--i' as string]: i };
@@ -187,6 +266,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
                   <span className="pill neutral">Não gera aporte</span>
                 </div>
                 <div className="cat-values"><b>{formatMoney(c.spent)}</b><span className="muted"> gastos no mês</span></div>
+                {insights(c.categoryId, c.spent)}
               </button>
             );
           }
@@ -220,6 +300,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
               ) : (
                 <p className="cat-foot muted small">Você ainda pode gastar <b>{formatMoney(c.limit - c.spent)}</b> neste mês.</p>
               )}
+              {insights(c.categoryId, c.spent, c.limit)}
             </button>
           );
         })}

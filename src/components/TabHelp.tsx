@@ -31,6 +31,11 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
           Os gastos excedentes de um mês aberto são previsão: só passam para o mês seguinte quando o mês é fechado.</p>
         <p><b>Categorias:</b> cada cartão mostra quanto já foi gasto, quanto ainda dá para gastar ou, se passou do limite, quanto excedeu
           e o aporte gerado. Toque numa categoria para ver os gastos dela.</p>
+        <p><b>Em cada categoria:</b> a comparação com o mês anterior (↑ subiu, ↓ desceu) e, a partir do dia 5, a previsão de quanto
+          ela deve fechar no ritmo atual.</p>
+        <p><b>Gastos recorrentes:</b> assinaturas e contas marcadas como "Repete todo mês" mostram se já apareceram neste mês e
+          avisam quando vieram com valor diferente.</p>
+        <p><b>Meses futuros:</b> avance o mês no topo para ver as parcelas que já vão cair na fatura.</p>
         <p><b>Atenção neste mês:</b> avisa as categorias perto do limite ou acima dele.</p>
         <p><b>A identificar:</b> gastos importados que o app não soube classificar. Toque para escolher a categoria.</p>
         <p><b>Fechar mês:</b> quando o mês acabar e tudo estiver classificado, feche o mês para congelar os valores. Dá para reabrir se precisar corrigir algo.</p>
@@ -50,6 +55,10 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
           <b> Dividir este gasto com outras pessoas</b>. Informe a sua parte por número de pessoas, percentual ou valor fixo: só a sua parte
           conta nos limites e nos aportes. Nas compras parceladas, as próximas parcelas entram com a mesma divisão, e um estorno
           da compra é dividido na mesma proporção.</p>
+        <p><b>Buscar:</b> digite no campo de busca para achar lançamentos de todos os meses.</p>
+        <p><b>Selecionar:</b> marque vários lançamentos e mova todos para uma categoria de uma vez.</p>
+        <p><b>Desfazer:</b> ao excluir um lançamento ou trocar a categoria, aparece "↶ Desfazer" por alguns segundos.</p>
+        <p><b>Repete todo mês:</b> ligue essa opção no lançamento de uma assinatura ou conta fixa para o Painel acompanhar.</p>
         <p>Toque na descrição para editar ou excluir um lançamento. <b>+ Novo lançamento</b> serve para gastos que não vieram de fatura ou extrato.</p>
         <p className="muted">Valores negativos são estornos e abatem o total da categoria. Meses fechados não podem ser alterados: reabra o mês no Painel.</p>
       </>
@@ -78,6 +87,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p>Cada aplicação quita primeiro o mês pendente mais antigo. Um resgate precisa ser reposto e volta a ser devido.</p>
         <p>Aplicações e resgates entram sozinhos ao importar o extrato da conta Nubank. Use <b>+ Aplicação</b> e <b>− Resgate</b> só para
           o que não estiver no extrato. <b>Informar saldo</b> corrige o saldo pelo valor real do app do banco, e a diferença é registrada como rendimento.</p>
+        <p><b>Meta da caixinha:</b> defina quanto quer juntar e até quando. O app mostra o progresso pelo saldo estimado e quanto
+          aportar por mês para chegar lá.</p>
         <p><b>Devido × pago por mês:</b> cada mês mostra o saldo anterior (o que faltou dos meses anteriores), o fixo, os excedentes,
           o total, o que foi aportado no mês e o que ainda falta. O que falta passa para o mês seguinte.</p>
       </>
@@ -89,6 +100,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
       <>
         <p>Gráficos para acompanhar os meses: gastos por categoria, evolução mês a mês, aportes devidos × pagos e o saldo da caixinha.</p>
         <p>Use os botões no alto para escolher o período dos gráficos.</p>
+        <p><b>Parcelas dos próximos meses:</b> quanto das próximas faturas já está comprometido por compras parceladas.</p>
         <p><b>Exportar relatório:</b> escolha o mês inicial e o final e baixe em PDF ou planilha (Excel), com o resumo de cada mês,
           as categorias, todos os lançamentos e os movimentos da caixinha.</p>
       </>
