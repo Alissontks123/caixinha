@@ -465,3 +465,80 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
   .topbar-month { order: 3; flex-basis: 100%; display: flex; justify-content: center; margin-left: 0; }
   .topbar-month + .topbar-actions { margin-left: auto; }
 }
+
+/* ================= animações ================= */
+:root { --ease-out: cubic-bezier(.2, .8, .2, 1); }
+
+/* 1. troca de aba: traço do menu desliza e o conteúdo surge subindo */
+.tabbar { position: relative; }
+.tabbar button.active { border-bottom-color: transparent; }
+.tab-ink {
+  position: absolute; left: 0; bottom: 0; width: calc(100% / 6); height: 2px; border-radius: 2px;
+  background: var(--primary); transition: transform 0.35s var(--ease-out), opacity 0.2s;
+}
+.page-enter { animation: pageIn 0.35s var(--ease-out) both; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* 3. barras enchendo */
+.progress-fill { animation: fillIn 0.9s var(--ease-out) both; }
+@keyframes fillIn { from { width: 0; } }
+.bar-grow { transform-box: fill-box; transform-origin: left center; animation: growX 0.8s var(--ease-out) both; }
+.col-grow { transform-box: fill-box; transform-origin: center bottom; animation: growY 0.7s var(--ease-out) both; }
+@keyframes growX { from { transform: scaleX(0); } }
+@keyframes growY { from { transform: scaleY(0); } }
+
+/* 4 e 10. cartões e listas em cascata (o atraso para no 10º item, para listas longas não demorarem) */
+.stagger > * { animation: rise 0.4s var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 10) * 45ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* 5. janelas sobem de baixo com o fundo escurecendo */
+.modal-backdrop { animation: fadeIn 0.25s ease both; }
+.modal { animation: sheetUp 0.35s var(--ease-out) both; }
+@media (min-width: 600px) { .modal { animation-name: popIn; } }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes sheetUp { from { transform: translateY(100%); } }
+@keyframes popIn { from { opacity: 0; transform: translateY(12px) scale(.97); } }
+
+/* 6. botões que respondem ao toque */
+.btn, .chip, .icon-btn, .help-btn, .cat-card, .scroll-arrow, .tabbar button, .link-btn {
+  transition: transform 0.12s ease, filter 0.12s ease, background-color 0.2s;
+}
+.btn:active:not(:disabled), .chip:active, .icon-btn:active:not(:disabled), .help-btn:active, .scroll-arrow:active, .tabbar button:active {
+  transform: scale(0.95); filter: brightness(0.96);
+}
+.cat-card:active { transform: scale(0.985); }
+
+/* 7. comemoração ao quitar o mês */
+.celebrate-layer { position: fixed; inset: 0; z-index: 70; pointer-events: none; display: grid; place-items: center; }
+.celebrate-card {
+  display: grid; justify-items: center; gap: 6px; text-align: center; background: var(--surface); color: var(--text);
+  border: 1px solid var(--hero-border); border-radius: 22px; padding: 22px 28px; box-shadow: 0 12px 40px rgba(60, 50, 120, 0.18);
+  animation: celebrateCard 2.6s var(--ease-out) both;
+}
+.celebrate-card b { font-family: var(--font-display); font-size: 1.25rem; }
+.celebrate-check { width: 56px; height: 56px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; animation: pop 0.5s cubic-bezier(.3, 1.6, .5, 1) both; }
+.celebrate-check svg { width: 30px; height: 30px; }
+.celebrate-check path { stroke: var(--surface); stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw 0.4s 0.3s ease forwards; }
+.confetti i { position: absolute; top: 50%; left: 50%; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  animation: burst 1.3s cubic-bezier(.2, .7, .3, 1) 0.2s forwards; }
+@keyframes celebrateCard { 0% { opacity: 0; transform: scale(.9); } 12% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes pop { from { transform: scale(0); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes burst { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); } }
+
+/* 8. alerta chamando atenção: pulsa duas vezes e para */
+.pill.danger, .alert-icon.over { animation: pulse 1.2s ease-out 0.4s 2; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+
+/* 9. troca de tema suave (a classe fica no <html> só durante a troca) */
+html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+  transition: background-color 0.45s ease, color 0.45s ease, border-color 0.45s ease, fill 0.45s ease !important;
+}
+
+/* quem pediu "Reduzir movimento" no aparelho vê tudo parado */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .celebrate-layer { display: none; }
+}
+.stagger-item { animation: rise 0.4s var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 10) * 45ms); }

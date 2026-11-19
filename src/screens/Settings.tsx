@@ -95,7 +95,7 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
         {normal.map((c, i) => {
           const rule = ruleForMonth(data.rules, c.id, month);
           return (
-            <div key={c.id} className="card cat-setting">
+            <div key={c.id} className="card cat-setting stagger-item" style={{ ['--i' as string]: i }}>
               <button className="cat-setting-main" onClick={() => setEditingCat(c)}>
                 <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
                 {rule && <span className="muted small">{describeRule(rule)}</span>}

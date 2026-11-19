@@ -1,10 +1,11 @@
-import { ErrorBox, ProgressBar, useAction } from '../components/ui';
+import { useEffect, useState } from 'react';
+import { Celebration, CountUp, ErrorBox, ProgressBar, useAction } from '../components/ui';
 import { closeMonth, reopenMonth } from '../db/repo';
 import { overflowBlocks, roomUntilNextBlock } from '../domain/rules';
 import { closeBlocker, summarizeMonth } from '../domain/summary';
 import type { Month, Profile } from '../domain/types';
 import { formatMoney } from '../lib/money';
-import { currentMonth, dateLabel, monthLabel, monthShort, todayISO } from '../lib/months';
+import { addMonths, currentMonth, dateLabel, monthLabel, monthShort, todayISO } from '../lib/months';
 import { monthStatus } from '../domain/alerts';
 import { computeLedger, computeStatements } from '../domain/ledger';
 import { summaryInput, type AppData } from '../useAppData';
@@ -30,6 +31,19 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
     month,
     (m) => (m === month ? summary.overflowTotal : summarizeMonth(m, summaryInput(data)).overflowTotal),
   ).find((s) => s.month === month);
+
+  // comemoração: uma vez por mês, quando o que falta aportar chega a zero (só no mês atual e no anterior)
+  const quitado = !!statement && statement.total > 0 && statement.remaining <= 0 && month >= addMonths(currentMonth(), -1);
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (!quitado) return;
+    const key = `caixinha-comemorado-${month}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+    } catch { return; }
+    setCelebrating(true);
+  }, [quitado, month]);
   const blocker = closeBlocker(summary, currentMonth());
   const threshold = data.profile.alertThreshold / 100;
   const { error, run } = useAction();
@@ -92,7 +106,7 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
         <p className="hero-label">Aportes necessários no mês</p>
         {statement ? (
           <>
-            <p className="hero-value">{formatMoney(Math.max(statement.total, 0))}</p>
+            <p className="hero-value"><CountUp cents={Math.max(statement.total, 0)} /></p>
             <dl className="hero-lines">
               <dt>Fixo devido</dt><dd>{formatMoney(statement.fixed)}</dd>
               <dt>Gastos excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''}</dt>
@@ -113,7 +127,7 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
           </>
         ) : (
           <>
-            <p className="hero-value">{formatMoney(summary.totalDue)}</p>
+            <p className="hero-value"><CountUp cents={summary.totalDue} /></p>
             <dl className="hero-lines">
               <dt>Fixo devido</dt><dd>{formatMoney(summary.fixed)}</dd>
               <dt>Gastos excedentes</dt><dd>{formatMoney(summary.overflowTotal)}</dd>
@@ -129,11 +143,12 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
         </button>
       )}
 
-      <section className="stack-sm">
-        {summary.categories.map((c) => {
+      <section className="stack-sm stagger" key={month}>
+        {summary.categories.map((c, i) => {
+          const order = { ['--i' as string]: i };
           if (c.contributes === false) {
             return (
-              <button key={c.categoryId} className="card cat-card" onClick={() => goToTransactions(c.categoryId)}>
+              <button key={c.categoryId} className="card cat-card" style={order} onClick={() => goToTransactions(c.categoryId)}>
                 <div className="cat-head">
                   <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
                   <span className="pill neutral">Não gera aporte</span>
@@ -148,7 +163,7 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
           const blocks = overflowBlocks(c.spent, c.limit, c.blockSize);
           const room = roomUntilNextBlock(c.spent, c.limit, c.blockSize);
           return (
-            <button key={c.categoryId} className="card cat-card" onClick={() => goToTransactions(c.categoryId)}>
+            <button key={c.categoryId} className="card cat-card" style={order} onClick={() => goToTransactions(c.categoryId)}>
               <div className="cat-head">
                 <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
                 {c.contribution > 0 && <span className="pill danger">+{formatMoney(c.contribution)}</span>}
@@ -195,6 +210,9 @@ export function Dashboard({ data, month, goToTransactions, goToCaixinha }: Props
         )}
         <ErrorBox error={error} />
       </section>
+      {celebrating && statement && (
+        <Celebration title="Mês quitado!" detail={`Já aportado: ${formatMoney(statement.paid)}`} onDone={() => setCelebrating(false)} />
+      )}
     </div>
   );
 }

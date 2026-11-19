@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { addMonths, monthLabel } from '../lib/months';
-import { parseMoney } from '../lib/money';
+import { formatMoney, parseMoney } from '../lib/money';
 import type { Month } from '../domain/types';
 
 export function MonthPicker({ month, onChange }: { month: Month; onChange: (m: Month) => void }) {
@@ -134,5 +134,64 @@ export function ScrollRow({ children, label, activeKey }: { children: ReactNode;
       <div ref={ref} className="chips" role="group" aria-label={label} onScroll={update}>{children}</div>
       {edges.right && <button type="button" className="scroll-arrow right" aria-label="Ver mais" onClick={() => scroll(1)}>›</button>}
     </div>
+  );
+}
+
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** Valor em reais que "conta" do valor anterior (ou de zero) até o novo, em menos de 1 segundo. */
+export function CountUp({ cents, duration = 900 }: { cents: number; duration?: number }) {
+  const [shown, setShown] = useState(reducedMotion() ? cents : 0);
+  // valor que está na tela agora: uma nova contagem começa dele (inclusive se a anterior foi interrompida)
+  const current = useRef(shown);
+  useEffect(() => {
+    if (reducedMotion()) { current.current = cents; setShown(cents); return; }
+    const start = current.current;
+    if (start === cents) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(start + (cents - start) * eased);
+      current.current = v;
+      setShown(v);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [cents, duration]);
+  return <>{formatMoney(shown)}</>;
+}
+
+const CONFETTI = ['#9b8fe6', '#f29cb7', '#6fc6aa', '#f2bd5e', '#86b6ea', '#f3a07c'];
+
+/** "✓ Mês quitado!" com confetes pastel, por cima da tela, que some sozinho. */
+export function Celebration({ title, detail, onDone }: { title: string; detail?: string; onDone: () => void }) {
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    const t = setTimeout(() => done.current(), 2700);
+    return () => clearTimeout(t);
+  }, []);
+  const bits = Array.from({ length: 28 }, (_, i) => {
+    const a = (i / 28) * Math.PI * 2;
+    const r = 110 + (i % 4) * 30;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r - 30, rot: (i % 2 ? 1 : -1) * (200 + i * 15), color: CONFETTI[i % CONFETTI.length] };
+  });
+  return createPortal(
+    <div className="celebrate-layer" role="status" aria-live="polite">
+      <div className="confetti" aria-hidden>
+        {bits.map((b, i) => (
+          <i key={i} style={{ background: b.color, ['--x' as string]: `${b.x}px`, ['--y' as string]: `${b.y}px`, ['--r' as string]: `${b.rot}deg` }} />
+        ))}
+      </div>
+      <div className="celebrate-card">
+        <div className="celebrate-check"><svg viewBox="0 0 26 26" aria-hidden><path d="M6 13.5l4.5 4.5L20 8.5" /></svg></div>
+        <b>{title}</b>
+        {detail && <span className="muted small">{detail}</span>}
+      </div>
+    </div>,
+    document.body,
   );
 }

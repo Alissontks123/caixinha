@@ -79,8 +79,9 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
       ) : (
         <>
           <p className="muted small">{list.length} lançamento(s) · total {formatMoney(total)}</p>
-          {groups.map((g) => (
-            <section key={g.date} className="tx-group">
+          <div className="stack-sm stagger" key={`${month}|${filter ?? 'todos'}`}>
+          {groups.map((g, i) => (
+            <section key={g.date} className="tx-group" style={{ ['--i' as string]: i }}>
               <h3 className="tx-date">{dateLabel(g.date)}</h3>
               <div className="card tx-list">
                 {g.items.map((t) => {
@@ -119,6 +120,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
               </div>
             </section>
           ))}
+          </div>
         </>
       )}
 

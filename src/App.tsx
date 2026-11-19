@@ -74,9 +74,13 @@ export default function App() {
               <span>{t.label}</span>
             </button>
           ))}
+          <span className="tab-ink" aria-hidden style={{
+            transform: `translateX(${Math.max(TABS.findIndex((t) => t.id === tab), 0) * 100}%)`,
+            opacity: TABS.some((t) => t.id === tab) ? 1 : 0,
+          }} />
         </nav>
       </header>
-      <main className="content">
+      <main className="content page-enter" key={tab}>
         {tab === 'painel' && <Dashboard data={d} month={month} goToTransactions={goToTransactions} goToCaixinha={() => go('caixinha')} />}
         {tab === 'lancamentos' && <Transactions data={d} month={month} filter={filter} setFilter={setFilter} />}
         {tab === 'importar' && <Import data={d} goToTransactions={(m) => goToTransactions(undefined, m)} />}

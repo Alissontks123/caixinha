@@ -188,11 +188,11 @@ export function CategoryBarsChart({ categories, dark, controls }: { categories: 
                   <rect x={0} y={y + 22} width={w - 8} height={barH} rx={4} className="chart-track" />
                   {excess > 0 ? (
                     <>
-                      <rect x={0} y={y + 22} width={Math.max(wWithin - 2, 0)} height={barH} fill={spentColor} />
-                      <path d={rightRoundedRect(wWithin, y + 22, wExcess, barH)} fill={STATUS.critical} />
+                      <rect x={0} y={y + 22} width={Math.max(wWithin - 2, 0)} height={barH} fill={spentColor} className="bar-grow" />
+                      <path d={rightRoundedRect(wWithin, y + 22, wExcess, barH)} fill={STATUS.critical} className="bar-grow" />
                     </>
                   ) : (
-                    <path d={rightRoundedRect(0, y + 22, wWithin, barH)} fill={spentColor} />
+                    <path d={rightRoundedRect(0, y + 22, wWithin, barH)} fill={spentColor} className="bar-grow" />
                   )}
                   {hasLimit && <rect x={x(c.limit) - 1} y={y + 18} width={2} height={barH + 8} className="chart-limit" />}
                 </g>
@@ -273,8 +273,8 @@ export function StackedMonthlyChart({ months, series, values, dark }: {
                   cursor = y;
                   const drawH = top ? h : Math.max(h - 2, 0); // 2px de fundo entre segmentos
                   return top
-                    ? <path key={p.s.id} d={topRoundedRect(cx, y, colW, drawH)} fill={colorOf(p.s)} />
-                    : <rect key={p.s.id} x={cx} y={y + 2} width={colW} height={drawH} fill={colorOf(p.s)} />;
+                    ? <path key={p.s.id} d={topRoundedRect(cx, y, colW, drawH)} fill={colorOf(p.s)} className="col-grow" />
+                    : <rect key={p.s.id} x={cx} y={y + 2} width={colW} height={drawH} fill={colorOf(p.s)} className="col-grow" />;
                 })}
               </g>
             );

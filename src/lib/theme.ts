@@ -27,7 +27,10 @@ export function setThemePref(pref: ThemePref) {
     if (pref === 'auto') localStorage.removeItem(KEY);
     else localStorage.setItem(KEY, pref);
   } catch { /* sem armazenamento: vale só até fechar */ }
+  const root = document.documentElement;
+  root.classList.add('theme-anim');
   applyTheme(pref);
+  window.setTimeout(() => root.classList.remove('theme-anim'), 500);
   window.dispatchEvent(new Event(EVENT));
 }
 
