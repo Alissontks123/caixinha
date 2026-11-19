@@ -43,6 +43,19 @@ describe.skipIf(!has('fatura_nubank.pdf'))('fatura Nubank real', () => {
   });
 });
 
+// fatura Nubank sem a página de encargos ("Nu Pagamentos S.A."): antes não era reconhecida
+describe.skipIf(!has('fatura_nubank_2.pdf'))('fatura Nubank real (4 páginas, sem página de encargos)', () => {
+  it('é reconhecida e bate com os totais', async () => {
+    const doc = await load('fatura_nubank_2.pdf');
+    expect(doc.source).toBe('fatura-nubank');
+    expectChecksOk(doc.checks);
+    const items = counted(doc.items);
+    expect(items.length).toBeGreaterThan(5);
+    expect(items.some((i) => i.installment)).toBe(true);
+    expect(doc.items.some((i) => i.kind === 'ignorado' && /fatura/i.test(i.ignoreReason ?? ''))).toBe(true);
+  });
+});
+
 describe.skipIf(!has('fatura_c6.pdf') || !process.env.C6_PDF_PASSWORD)('fatura C6 real', () => {
   it('pede senha quando não informada e recusa senha errada', async () => {
     await expect(load('fatura_c6.pdf')).rejects.toMatchObject({ incorrect: false });

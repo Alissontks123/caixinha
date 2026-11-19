@@ -2,8 +2,13 @@ import { monthOf } from '../lib/months';
 import { inferDate, makeDate, monthNumber, parseBRL, splitInstallment } from './pdfText';
 import type { DocCheck, Line, ParsedDocument, ParsedItem } from './types';
 
+/**
+ * Fatura do cartão Nubank. Nem toda fatura traz a página de encargos com "Nu Pagamentos S.A."
+ * (algumas têm só 4 páginas), então aceita também as outras marcas do Nubank.
+ */
 export function isNubankFatura(text: string): boolean {
-  return /Nu Pagamentos/i.test(text) && /TRANSAÇÕES/.test(text) && /EMISSÃO E ENVIO/i.test(text);
+  const nubank = /Nu Pagamentos|Nubank|aplicativo do Nu/i.test(text);
+  return nubank && /TRANSAÇÕES/.test(text) && /EMISSÃO E ENVIO/i.test(text) && /RESUMO DA FATURA ATUAL|Total a pagar/i.test(text);
 }
 
 /**
