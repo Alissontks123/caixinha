@@ -190,15 +190,15 @@ export function Import({ data, goToTransactions }: Props) {
           categories={data.categories}
           cancelLabel={multi ? 'Pular arquivo' : 'Cancelar'}
           onCancel={cancelCurrent}
-          onConfirm={async (choices, caixinhaIncluded) => {
+          onConfirm={async (choices, caixinhaIncluded, avistaChosen) => {
             // simula o "depois" para avisar sobre limites e novos blocos de aporte
             const newTx: Transaction[] = phase.review.filter((r) => r.status === 'new').map((r) => ({
               id: `__import_${r.index}`, date: r.item.date, month: r.item.month, description: r.item.description,
-              amount: r.item.amount, categoryId: resolveCategory(phase.review, choices, r.index) || UNIDENTIFIED_ID,
+              amount: shareOf(reviewAmount(r, avistaChosen), r.share), categoryId: resolveCategory(phase.review, choices, r.index) || UNIDENTIFIED_ID,
               source: phase.doc.source, createdAt: 0,
             }));
             const alerts = alertsForChange(summaryInput(data), [...data.transactions, ...newTx], newTx.map((t) => t.month), data.profile.alertThreshold);
-            const result = await saveImport(phase.doc, phase.review, choices, caixinhaIncluded);
+            const result = await saveImport(phase.doc, phase.review, choices, caixinhaIncluded, avistaChosen);
             const month = mostCommon(newTx.map((t) => t.month));
             if (multi) finishFile({ label: phase.doc.label, result }, alerts, month);
             else setPhase({ step: 'done', doc: phase.doc, result, month, alerts });
@@ -322,7 +322,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
   cancelLabel?: string;
   review: ReviewItem[];
   categories: Category[];
-  onConfirm: (choices: Map<number, string>, caixinhaIncluded: Set<number>) => Promise<void>;
+  onConfirm: (choices: Map<number, string>, caixinhaIncluded: Set<number>, avista: Set<number>) => Promise<void>;
   onCancel: () => void;
 }) {
   const [choices, setChoices] = useState(() => new Map<number, string>());
@@ -335,6 +335,13 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
       return next;
     });
   const [saving, setSaving] = useState(false);
+  // compras parceladas novas que o usuário escolheu considerar à vista
+  const [avista, setAvista] = useState(() => new Set<number>());
+  const setMode = (index: number, on: boolean) => setAvista((prev) => {
+    const next = new Set(prev);
+    if (on) next.add(index); else next.delete(index);
+    return next;
+  });
   const [error, setError] = useState<string | null>(null);
   const fresh = review.filter((r) => r.status === 'new');
   // a lista "precisa escolher" é fixada ao abrir, para os itens não pularem de seção enquanto o usuário escolhe
@@ -363,7 +370,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
     setSaving(true);
     setError(null);
     try {
-      await onConfirm(choices, included);
+      await onConfirm(choices, included, avista);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setSaving(false);
@@ -387,7 +394,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
           <span className="tx-meta muted small">{meta}</span>
           {(r.reason || it.ignoreReason) && <span className="tx-meta muted small">{it.ignoreReason ?? r.reason}</span>}
         </div>
-        <span className={`tx-amount ${it.amount < 0 ? 'refund' : ''}`}>{formatMoney(shareOf(it.amount, r.share))}</span>
+        <span className={`tx-amount ${it.amount < 0 ? 'refund' : ''}`}>{formatMoney(shareOf(reviewAmount(r, avista), r.share))}</span>
         {editable && (
           <select className="cat-select" aria-label={`Categoria de ${it.description}`} value={value} onChange={(e) => choose(r, e.target.value)}>
             {!value && <option value="">Escolha a categoria…</option>}
@@ -395,6 +402,24 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
           </select>
         )}
         {editable && askIndexes.has(r.index) && <MerchantHint text={it.matchText || it.description} />}
+        {editable && r.askInstallment && it.installment && (
+          <div className="installment-choice">
+            <span className="small muted">Compra parcelada ({it.installment.n}/{it.installment.total}):</span>
+            <div className="segmented">
+              <button type="button" className={!avista.has(r.index) ? 'active' : ''} onClick={() => setMode(r.index, false)}>Parcela por mês</button>
+              <button type="button" className={avista.has(r.index) ? 'active' : ''} onClick={() => setMode(r.index, true)}>
+                {it.installment.n === 1 ? `À vista (${formatMoney(it.amount * it.installment.total)})` : 'À vista (desconsiderar)'}
+              </button>
+            </div>
+            {avista.has(r.index) && (
+              <span className="small muted">
+                {it.installment.n === 1
+                  ? `O total de ${it.installment.total} × ${formatMoney(it.amount)} conta em ${monthLabel(it.month)}; as próximas parcelas não contam.`
+                  : 'Esta parcela e as próximas não contam (a compra já foi considerada antes).'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -490,4 +515,12 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
       </div>
     </div>
   );
+}
+
+/** Valor que conta do item na revisão, considerando a escolha "à vista" para compras parceladas. */
+function reviewAmount(r: ReviewItem, avista: Set<number>): number {
+  const inst = r.item.installment;
+  if (r.avista === 'skip') return 0;
+  if (r.askInstallment && inst && avista.has(r.index)) return inst.n === 1 ? r.item.amount * inst.total : 0;
+  return r.item.amount;
 }

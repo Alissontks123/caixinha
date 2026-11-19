@@ -1,4 +1,4 @@
-import { myAmount } from '../domain/share';
+import { effectiveAmount, myAmount } from '../domain/share';
 import { computeLedger, computeStatements, type MonthLedger, type MonthStatement } from '../domain/ledger';
 import { summarizeMonth, type MonthSummary } from '../domain/summary';
 import type { CaixinhaMovement, Cents, ISODate, Month } from '../domain/types';
@@ -73,7 +73,7 @@ export function buildReport(data: ReadyData, from: Month, to: Month, today: ISOD
     .sort((a, b) => a.month.localeCompare(b.month) || a.date.localeCompare(b.date))
     .map((t) => ({
       date: t.date, month: t.month, description: t.description, category: catName.get(t.categoryId) ?? '—',
-      amount: myAmount(t), total: t.share ? t.amount : undefined, source: SOURCE[t.source] ?? t.source, installment: t.installment, card: t.cardLast4,
+      amount: myAmount(t), total: t.share ? effectiveAmount(t) : undefined, source: SOURCE[t.source] ?? t.source, installment: t.installment, card: t.cardLast4,
     }));
   const movements = data.movements
     .filter((m) => !m.deleted && inRange(m.date.slice(0, 7)))

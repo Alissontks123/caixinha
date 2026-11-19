@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react';
 import { MerchantHint } from '../components/MerchantHint';
 import { ErrorBox, Field, Modal, MoneyInput, ScrollRow, Toast, UndoToast, useAction, type UndoInfo } from '../components/ui';
 import { UNIDENTIFIED_ID } from '../db/db';
-import { clearRecurring, deleteTransaction, saveTransaction, setCategoryForMany } from '../db/repo';
+import { clearRecurring, deleteTransaction, saveTransaction, setCategoryForMany, setInstallmentMode } from '../db/repo';
 import { recurringKey } from '../domain/insights';
 import { normalizeText } from '../domain/categorize';
 import { alertsForChange, describeAlert } from '../domain/alerts';
-import { describeShare, myAmount, shareOf } from '../domain/share';
+import { describeShare, effectiveAmount, myAmount, shareOf } from '../domain/share';
 import type { Category, Month, Share, Transaction } from '../domain/types';
 import { centsToInput, formatMoney, parseMoney } from '../lib/money';
 import { currentMonth, dateLabel, monthOf, todayISO } from '../lib/months';
@@ -146,7 +146,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                   const rowClosed = closedMonths.has(t.month);
                   const isSel = selected.has(t.id);
                   return (
-                    <div key={t.id} className={`tx-row ${selecting ? 'selecting' : ''} ${isSel ? 'selected' : ''}`}>
+                    <div key={t.id} className={`tx-row ${selecting ? 'selecting' : ''} ${isSel ? 'selected' : ''} ${t.avista === 'skip' ? 'faded' : ''}`}>
                       {selecting && (
                         <input
                           type="checkbox"
@@ -165,7 +165,9 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                             t.installment && `parcela ${t.installment}`,
                             t.cardLast4 && `final ${t.cardLast4}`,
                             t.date.slice(0, 7) !== t.month && `compra em ${dateLabel(t.date)}`,
-                            t.share && `dividido · total ${formatMoney(t.amount)}`,
+                            t.avista === 'total' && `à vista: ${t.installment?.split('/')[1]} × ${formatMoney(t.amount)}`,
+                            t.avista === 'skip' && 'compra considerada à vista (não conta)',
+                            t.share && `dividido · total ${formatMoney(effectiveAmount(t))}`,
                             t.note,
                           ].filter(Boolean).join(' · ')}
                         </span>
@@ -267,6 +269,7 @@ function TransactionForm({
   const [note, setNote] = useState(initial?.note ?? '');
   const wasRecurring = !!initial && recurringKeys.has(recurringKey(initial));
   const [recurring, setRecurring] = useState(wasRecurring);
+  const [avistaMode, setAvistaMode] = useState(!!initial?.avista);
   const [split, setSplit] = useState<SplitDraft>(() => splitDraftOf(initial?.share));
   const { error, setError, run } = useAction();
 
@@ -295,6 +298,7 @@ function TransactionForm({
       await saveTransaction(draft);
       // desmarcou: o estabelecimento deixa de ser recorrente em todos os meses
       if (wasRecurring && !recurring && initial) await clearRecurring(recurringKey(initial));
+      if (initial?.installment && avistaMode !== !!initial.avista) await setInstallmentMode(initial, avistaMode);
     });
     if (ok) {
       onSaved({ ...initial, ...draft, id: initial?.id ?? '__novo__', createdAt: initial?.createdAt ?? Date.now() });
@@ -330,6 +334,20 @@ function TransactionForm({
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
+        {initial?.installment && initial.amount > 0 && (
+          <div className="stack-sm">
+            <span className="field-label">Compra parcelada ({initial.installment})</span>
+            <div className="segmented">
+              <button type="button" className={!avistaMode ? 'active' : ''} onClick={() => setAvistaMode(false)}>Parcela por mês</button>
+              <button type="button" className={avistaMode ? 'active' : ''} onClick={() => setAvistaMode(true)}>À vista</button>
+            </div>
+            <span className="muted small">
+              {avistaMode
+                ? 'O total conta no mês da 1ª parcela e as outras parcelas não contam. Se a 1ª parcela não está no app, a compra é desconsiderada.'
+                : 'Cada parcela conta no mês da sua fatura.'}
+            </span>
+          </div>
+        )}
         <label className="switch-row">
           <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
           <span className="switch" aria-hidden />

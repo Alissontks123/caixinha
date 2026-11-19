@@ -125,6 +125,27 @@ describe('revisão da importação', () => {
     expect(r[2].share).toEqual({ mode: 'people', people: 4 });
   });
 
+  it('compra parcelada: pergunta na primeira vez; parcelas de compra à vista não contam', () => {
+    const card = { last4: '1111', holder: 'A' };
+    const known: Transaction[] = [
+      { id: 'k1', date: '2026-09-05', month: '2026-10', description: 'LOJA X - Parcela 1/3', amount: 9000, categoryId: 'ali',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('LOJA X'), cardLast4: '1111', installment: '1/3', avista: 'total' },
+      { id: 'k2', date: '2026-08-05', month: '2026-10', description: 'LOJA Y - Parcela 2/5', amount: 5000, categoryId: 'ali',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('LOJA Y'), cardLast4: '1111', installment: '2/5' },
+    ];
+    const d = doc([
+      item({ description: 'LOJA X - Parcela 2/3', matchText: 'LOJA X', amount: 9000, card, installment: { n: 2, total: 3 } }),
+      item({ description: 'LOJA Y - Parcela 3/5', matchText: 'LOJA Y', amount: 5000, card, installment: { n: 3, total: 5 } }),
+      item({ description: 'LOJA Z - Parcela 4/6', matchText: 'LOJA Z', amount: 7000, card, installment: { n: 4, total: 6 } }),
+    ]);
+    const r = prepareReview(d, ctx({ transactions: known }));
+    expect(r[0].avista).toBe('skip'); // compra já considerada à vista
+    expect(r[0].askInstallment).toBeFalsy();
+    expect(r[1].askInstallment).toBeFalsy(); // já conhecida, parcela por mês
+    expect(r[1].avista).toBeUndefined();
+    expect(r[2].askInstallment).toBe(true); // nova (mesmo sendo do meio): pergunta
+  });
+
   it('marca duplicados, mês fechado, ignorados e cartões de outra pessoa', () => {
     const items = [
       item({ description: 'A' }),

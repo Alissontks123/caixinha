@@ -599,3 +599,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
   display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
   background: var(--primary-soft); border-radius: 12px; padding: 8px 12px;
 }
+
+/* compra parcelada: parcela por mês ou à vista */
+.installment-choice { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.installment-choice .segmented button { font-size: 0.82rem; padding: 7px 6px; }

@@ -74,6 +74,9 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p>O app lê os gastos, confere se a soma bate com o total do documento e sugere a categoria de cada um. Escolha a categoria do
           que ele não reconheceu e toque em <b>Importar</b>. Se não souber o que é, veja a dica embaixo da despesa ou toque em
           <b> 🔎 Pesquisar no Google</b>.</p>
+        <p><b>Compras parceladas:</b> na primeira vez que uma compra parcelada aparece, escolha <b>Parcela por mês</b> (cada parcela
+          conta no mês da sua fatura) ou <b>À vista</b> (o total conta no mês da 1ª parcela e as próximas não contam; se a compra já
+          estava no meio, ela é desconsiderada). Dá para mudar depois, tocando no lançamento na aba Gastos.</p>
         <p>No extrato da conta Nubank, as aplicações e os resgates da caixinha entram sozinhos na aba Caixinha.</p>
         <p className="muted">A fatura da C6 pede senha: os 6 primeiros dígitos do CPF do titular. Importar o mesmo PDF duas vezes não duplica nada.
           O PDF é lido aqui mesmo e não é enviado para lugar nenhum.</p>

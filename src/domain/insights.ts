@@ -55,6 +55,7 @@ export function futureInstallments(transactions: Transaction[]): FutureInstallme
   const latest = new Map<string, Transaction>();
   for (const t of transactions) {
     if (!t.installment || t.amount <= 0) continue;
+    if (t.avista) continue; // compra considerada à vista: as próximas parcelas não contam
     const key = purchaseKey(t);
     const cur = latest.get(key);
     if (!cur || installmentNumber(t.installment) > installmentNumber(cur.installment)) latest.set(key, t);

@@ -63,3 +63,15 @@ describe('meta da caixinha', () => {
     expect(goalProgress(1000000, '2026-10', 0, '2026-11').perMonth).toBeUndefined(); // data passou
   });
 });
+
+describe('compra parcelada à vista', () => {
+  it('a 1ª parcela conta pelo total, as outras não contam e não há parcelas futuras', async () => {
+    const { myAmount } = await import('./share');
+    const first = tx({ id: 'p1', month: '2026-11', amount: 10000, installment: '1/10', matchKey: 'TV', avista: 'total' });
+    const other = tx({ id: 'p2', month: '2026-12', amount: 10000, installment: '2/10', matchKey: 'TV', avista: 'skip' });
+    expect(myAmount(first)).toBe(100000);
+    expect(myAmount(other)).toBe(0);
+    expect(myAmount({ ...first, share: { mode: 'people', people: 2 } })).toBe(50000);
+    expect(futureInstallments([first])).toEqual([]);
+  });
+});

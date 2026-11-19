@@ -66,6 +66,11 @@ export interface Transaction {
   installment?: string;
   /** Gasto dividido com outras pessoas: só a parte do usuário conta (ver `myAmount`). */
   share?: Share;
+  /**
+   * Compra parcelada considerada à vista: 'total' = esta parcela conta pelo valor total da compra
+   * (valor × nº de parcelas); 'skip' = parcela desconsiderada (a compra já foi contada à vista).
+   */
+  avista?: 'total' | 'skip';
   /** Gasto que se repete todo mês (assinatura, conta fixa…). Vale para o estabelecimento (ver `recurringKey`). */
   recurring?: boolean;
 }

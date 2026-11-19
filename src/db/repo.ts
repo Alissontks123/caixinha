@@ -177,6 +177,8 @@ export async function saveImport(
   choices: Map<number, string>,
   /** Índices dos movimentos da caixinha que o usuário manteve marcados. */
   caixinhaIncluded: Set<number> = new Set(),
+  /** Compras parceladas que o usuário escolheu considerar à vista. */
+  avistaChosen: Set<number> = new Set(),
 ): Promise<ImportResult> {
   const now = Date.now();
   const closed = new Set((await db.closings.toArray()).map((c) => c.month));
@@ -220,6 +222,8 @@ export async function saveImport(
       cardLast4: it.card?.last4,
       installment: it.installment ? `${it.installment.n}/${it.installment.total}` : undefined,
       share: r.share,
+      // à vista: a 1ª parcela conta pelo total; vista a partir do meio, a compra é desconsiderada
+      avista: r.askInstallment && avistaChosen.has(r.index) ? (it.installment?.n === 1 ? 'total' : 'skip') : r.avista,
     });
     // memoriza só o que o usuário escolheu ou corrigiu (o que a regra automática já acerta não precisa)
     const userChose = choices.has(r.index) && choices.get(r.index) !== r.categoryId;
@@ -255,6 +259,25 @@ export async function setCardMine(id: string, mine: boolean) {
 
 export async function setC6Password(password: string | undefined) {
   await db.profile.update('me', { c6Password: password });
+}
+
+/**
+ * Muda uma compra parcelada entre "parcela por mês" e "à vista", em todas as parcelas já importadas.
+ * À vista: a 1ª parcela conta pelo total e as outras não contam; se a 1ª parcela não está no app
+ * (a compra começou antes), todas ficam desconsideradas.
+ */
+export async function setInstallmentMode(tx: Transaction, avista: boolean) {
+  const all = await db.transactions.filter((t) => sameInstallmentPurchase(tx, t)).toArray();
+  for (const t of all) await assertMonthOpen(t.month);
+  const first = all.reduce((a, b) => (installmentNumber(b.installment) < installmentNumber(a.installment) ? b : a), all[0]);
+  await db.transaction('rw', db.transactions, async () => {
+    for (const t of all) {
+      const mode = !avista ? undefined : t.id === first.id && installmentNumber(t.installment) === 1 ? 'total' as const : 'skip' as const;
+      const next = { ...t, avista: mode };
+      if (!mode) delete next.avista;
+      await db.transactions.put(next);
+    }
+  });
 }
 
 /** Deixa de tratar um estabelecimento como recorrente (tira a marca de todos os lançamentos dele). */

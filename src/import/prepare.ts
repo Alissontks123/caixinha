@@ -35,6 +35,10 @@ export interface ReviewItem {
   replacesManualId?: string;
   /** Divisão herdada (parcela seguinte de uma compra dividida, ou estorno de uma compra dividida). */
   share?: Share;
+  /** Compra parcelada vista pela primeira vez: perguntar "parcela por mês" ou "à vista". */
+  askInstallment?: boolean;
+  /** Parcela de uma compra já considerada à vista: entra desconsiderada. */
+  avista?: 'skip';
 }
 
 export interface PrepareContext {
@@ -171,6 +175,14 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
     if (previous) {
       r.share = previous.share;
       r.reason = [r.reason, `dividido como a parcela ${previous.installment}`].filter(Boolean).join(' · ');
+    }
+    // à vista ou parcela por mês: pergunta só na primeira vez que a compra aparece
+    if (r.item.amount <= 0 || r.item.kind !== 'compra') continue;
+    const known = ctx.transactions.filter((t) => sameInstallmentPurchase(me, t));
+    if (known.length === 0) r.askInstallment = true;
+    else if (known.some((t) => t.avista)) {
+      r.avista = 'skip';
+      r.reason = [r.reason, 'compra já considerada à vista (esta parcela não conta)'].filter(Boolean).join(' · ');
     }
   }
   return review;

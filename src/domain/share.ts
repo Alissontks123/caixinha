@@ -12,8 +12,16 @@ export function shareOf(amount: Cents, share: Share | undefined): Cents {
   }
 }
 
+/** Valor do lançamento antes da divisão, considerando compras parceladas tratadas à vista. */
+export function effectiveAmount(t: Pick<Transaction, 'amount' | 'avista' | 'installment'>): Cents {
+  if (t.avista === 'skip') return 0;
+  if (t.avista === 'total' && t.installment) return t.amount * Number(t.installment.split('/')[1] || 1);
+  return t.amount;
+}
+
 /** Quanto do lançamento conta para o usuário (limites, aportes, totais e relatórios). */
-export const myAmount = (t: Pick<Transaction, 'amount' | 'share'>): Cents => shareOf(t.amount, t.share);
+export const myAmount = (t: Pick<Transaction, 'amount' | 'share'> & Partial<Pick<Transaction, 'avista' | 'installment'>>): Cents =>
+  shareOf(effectiveAmount(t), t.share);
 
 /**
  * A mesma divisão expressa como proporção, para aplicar num estorno de valor diferente.
