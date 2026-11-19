@@ -17,7 +17,7 @@ const isInstalled = () =>
   (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
 
 const STEPS = (): Step[] => [
-  { tab: 'painel', title: 'Boas-vindas à Caixinha!', body: <p>Vamos conhecer o app em 1 minuto. Use <b>Próximo</b> para avançar ou <b>Pular</b> para fechar. Dá para rever depois em Ajustes.</p> },
+  { tab: 'painel', title: 'Boas-vindas à Caixinha!', body: <p>Vamos conhecer o app em 1 minuto. Use <b>Próximo</b> para avançar ou <b>Pular</b> para fechar. Dá para rever depois no botão <b>▶</b> do topo.</p> },
   {
     tab: 'painel',
     title: 'Instale no celular',
@@ -44,8 +44,9 @@ const STEPS = (): Step[] => [
   { tab: 'caixinha', target: 'goal', title: 'Meta', body: <p>Defina quanto quer juntar e até quando: o app mostra o progresso e quanto aportar por mês.</p> },
   { tab: 'historico', target: 'charts', title: 'Histórico', body: <p>Gráficos dos meses, as parcelas dos próximos meses e o botão para baixar o relatório em PDF ou Excel.</p> },
   { tab: 'painel', target: 'close', title: 'Feche o mês', body: <p>Quando o mês acabar e tudo estiver classificado, feche o mês: os valores ficam congelados e o que faltar aportar passa para o mês seguinte.</p> },
-  { tab: 'painel', target: 'actions', title: 'Tema e ajuda', body: <p><b>◐</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
-  { tab: 'painel', title: 'Pronto!', body: <p>Agora é com você. Para ver este tour de novo: <b>Ajustes → Ver o tour de novo</b>.</p> },
+  { tab: 'painel', target: 'sync-top', title: 'Sincronizar', body: <p>O <b>☁✓</b> mostra se está tudo sincronizado com o Google Drive. O botão <b>↻</b> sincroniza na hora (ou <b>☁</b> conecta, se ainda não estiver conectado).</p> },
+  { tab: 'painel', target: 'actions', title: 'Tour, tema e ajuda', body: <p><b>▶</b> mostra este tour de novo. <b>◐</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
+  { tab: 'painel', title: 'Pronto!', body: <p>Agora é com você. Para ver este tour de novo, toque em <b>▶</b> no topo.</p> },
 ];
 
 const SEEN_KEY = 'caixinha-tour-visto';

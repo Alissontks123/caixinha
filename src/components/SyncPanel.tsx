@@ -87,3 +87,26 @@ export function SyncBadge({ onClick }: { onClick: () => void }) {
     </button>
   );
 }
+
+/**
+ * Botão de sincronizar no topo, ao lado do indicador:
+ * desconectado → conecta; precisa entrar de novo → reconecta; conectado → sincroniza agora.
+ */
+export function SyncButton() {
+  const s = useSyncState();
+  if (s.status === 'unconfigured' || s.status === 'needs-choice') return null;
+  const busy = s.status === 'syncing';
+  const label = s.status === 'off' ? 'Conectar ao Google Drive'
+    : s.status === 'needs-auth' ? 'Entrar de novo no Google Drive'
+      : busy ? 'Sincronizando…' : 'Sincronizar agora';
+  const act = () => {
+    if (s.status === 'off') connect();
+    else if (s.status === 'needs-auth') reconnect();
+    else void syncNow();
+  };
+  return (
+    <button type="button" className={`help-btn sync-btn ${busy ? 'spinning' : ''}`} aria-label={label} title={label} disabled={busy} onClick={act}>
+      <span aria-hidden>{s.status === 'off' ? '☁' : '↻'}</span>
+    </button>
+  );
+}

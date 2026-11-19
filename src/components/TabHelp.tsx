@@ -123,8 +123,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p><b>Cartões:</b> marque quais cartões são seus. Só os gastos deles entram no seu controle.</p>
         <p><b>Senha da C6 e estabelecimentos memorizados:</b> o que o app guardou nas importações. Dá para esquecer a senha ou um estabelecimento.</p>
         <p><b>Backup:</b> salve uma cópia dos dados num arquivo ou restaure uma cópia.</p>
-        <p className="muted">Em <b>Ajuda e instalação</b> há o passo a passo para instalar o app no iPhone e no computador, e
-          <b> Ver o tour de novo</b> mostra outra vez a apresentação guiada do app.</p>
+        <p className="muted">Em <b>Ajuda e instalação</b> há o passo a passo para instalar o app no iPhone e no computador.
+          O botão <b>▶</b> no topo mostra outra vez a apresentação guiada do app.</p>
       </>
     ),
   },

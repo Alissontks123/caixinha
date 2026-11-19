@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { SyncBadge, SyncChoiceModal } from './components/SyncPanel';
+import { SyncBadge, SyncButton, SyncChoiceModal } from './components/SyncPanel';
 import { HelpButton } from './components/TabHelp';
 import { ThemeButton } from './components/ThemeButton';
 import { Tour, tourSeen, type TourTab } from './components/Tour';
@@ -62,9 +62,11 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="topbar-inner">
-          <span className="brand">Olá, {d.profile.name}<SyncBadge onClick={() => go('ajustes')} /></span>
+          <span className="brand" data-tour="sync-top">Olá, {d.profile.name}<SyncBadge onClick={() => go('ajustes')} /><SyncButton /></span>
           {(tab === 'painel' || tab === 'lancamentos') && <div className="topbar-month" data-tour="month"><MonthPicker month={month} onChange={setMonth} /></div>}
           <div className="topbar-actions" data-tour="actions">
+            <button type="button" className="help-btn" aria-label="Ver o tour do app" title="Ver o tour do app"
+              onClick={() => { setMonth(currentMonth()); setTouring(true); }}><span aria-hidden>▶</span></button>
             <ThemeButton />
             {tab !== 'ajuda' && <HelpButton topic={tab} />}
           </div>
@@ -92,7 +94,7 @@ export default function App() {
         {tab === 'importar' && <Import data={d} goToTransactions={(m) => goToTransactions(undefined, m)} />}
         {tab === 'caixinha' && <Caixinha data={d} />}
         {tab === 'historico' && <History data={d} />}
-        {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} onTour={() => { setMonth(currentMonth()); setTouring(true); }} />}
+        {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
       <SyncChoiceModal />
