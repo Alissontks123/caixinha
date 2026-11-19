@@ -95,9 +95,13 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const A = await device(browser, 'A');
 await setup(A.page, 'Teste', 'Gasto do PC');
 await A.page.getByRole('button', { name: /Ajustes/ }).click();
-await A.page.getByRole('button', { name: 'Conectar ao Google Drive' }).click();
+await A.page.locator('main').getByRole('button', { name: 'Conectar ao Google Drive' }).click();
 // depois do login o app volta ao Painel; o indicador do topo mostra o estado
 await A.page.locator('.sync-badge.idle').waitFor();
+// botão de sincronizar do topo
+await A.page.locator('.topbar .sync-btn').click();
+await A.page.locator('.sync-badge.idle').waitFor();
+log('botão do topo: sincronizou');
 await A.page.getByRole('button', { name: /Ajustes/ }).click();
 await A.page.getByText(/Sincronizado em/).waitFor();
 log('A conectado:', await syncStatus(A.page), '| arquivos no Drive:', drive.size);
@@ -112,7 +116,7 @@ log('B recebeu:', await B.page.locator('.brand').innerText(), '|', await txList(
 await addTx(B.page, 'Gasto do celular', '50');
 await B.page.waitForTimeout(6000);
 await A.page.getByRole('button', { name: /Ajustes/ }).click();
-await A.page.getByRole('button', { name: 'Sincronizar agora' }).click();
+await A.page.locator('.topbar .sync-btn').click();
 await A.page.getByText(/Sincronizado em/).waitFor();
 log('A depois de sincronizar:', await txList(A.page));
 
@@ -124,10 +128,10 @@ await addTx(B.page, 'Outro do celular', '30');
 await A.page.waitForTimeout(6000);
 await B.page.waitForTimeout(1000);
 await B.page.getByRole('button', { name: /Ajustes/ }).click();
-await B.page.getByRole('button', { name: 'Sincronizar agora' }).click();
+await B.page.locator('main').getByRole('button', { name: 'Sincronizar agora' }).click();
 await B.page.getByText(/Sincronizado em/).waitFor();
 await A.page.getByRole('button', { name: /Ajustes/ }).click();
-await A.page.getByRole('button', { name: 'Sincronizar agora' }).click();
+await A.page.locator('.topbar .sync-btn').click();
 await A.page.getByText(/Sincronizado em/).waitFor();
 log('Depois de mudanças nos dois → A:', await txList(A.page), '| B:', await txList(B.page));
 
@@ -135,7 +139,7 @@ log('Depois de mudanças nos dois → A:', await txList(A.page), '| B:', await t
 const C = await device(browser, 'C');
 await setup(C.page, 'Teste', 'Gasto do notebook');
 await C.page.getByRole('button', { name: /Ajustes/ }).click();
-await C.page.getByRole('button', { name: 'Conectar ao Google Drive' }).click();
+await C.page.locator('main').getByRole('button', { name: 'Conectar ao Google Drive' }).click();
 await C.page.getByText('Já existem dados nos dois lugares').waitFor();
 log('C pergunta:', (await C.page.locator('.modal p').first().innerText()).replace(/\n/g, ' '));
 await C.page.getByRole('button', { name: /Juntar os dois/ }).click();
