@@ -68,7 +68,9 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
     title: 'Como funciona a importação',
     body: (
       <>
-        <p>Envie o <b>PDF</b> da fatura do cartão C6 ou Nubank, ou do extrato da conta Nubank, baixado no app do banco.</p>
+        <p>Envie o <b>PDF</b> da fatura do cartão C6 ou Nubank, ou do extrato da conta Nubank, baixado no app do banco.
+          Dá para escolher <b>vários arquivos de uma vez</b>: o app mostra a revisão de um depois do outro ("Arquivo 2 de 3") e,
+          no fim, um resumo de cada um.</p>
         <p>O app lê os gastos, confere se a soma bate com o total do documento e sugere a categoria de cada um. Escolha a categoria do
           que ele não reconheceu e toque em <b>Importar</b>. Se não souber o que é, veja a dica embaixo da despesa ou toque em
           <b> 🔎 Pesquisar no Google</b>.</p>
