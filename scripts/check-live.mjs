@@ -30,7 +30,7 @@ await page.getByText('Bem-vindo(a)!').waitFor({ timeout: 15000 });
 console.log('Offline: abre normalmente');
 // configura e importa um PDF ainda offline (leitor de PDF guardado no aparelho)
 await page.getByLabel('Seu nome').fill('Teste');
-await page.getByLabel('Saldo total da caixinha nessa data').fill('0');
+await page.getByLabel(/Saldo da caixinha no fim de/).fill('0');
 await page.getByLabel('Aporte fixo mensal').fill('100');
 await page.getByRole('button', { name: 'Começar' }).click();
 await page.getByRole('button', { name: /Importar$/ }).click();
