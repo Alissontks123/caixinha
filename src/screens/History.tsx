@@ -57,11 +57,13 @@ export function History({ data }: { data: ReadyData }) {
         ))}
       </div>
 
+      <div data-tour="charts">
       <CategoryBarsChart
         categories={summarizeMonth(barMonth, input).categories}
         dark={dark}
         controls={<MonthPicker month={barMonth} onChange={setBarMonth} />}
       />
+      </div>
       <StackedMonthlyChart months={months} series={series} values={values} dark={dark} />
       <DueVsPaidChart rows={dueRows} dark={dark} />
       <BalanceChart points={balance} dark={dark} />

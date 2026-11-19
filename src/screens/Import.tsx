@@ -146,7 +146,7 @@ export function Import({ data, goToTransactions }: Props) {
       )}
 
       {phase.step === 'pick' && (
-        <section className="card stack">
+        <section className="card stack" data-tour="import">
           <h2>Importar PDF</h2>
           <p className="muted small">
             Aceita <b>fatura do cartão C6</b>, <b>fatura do cartão Nubank</b> e <b>extrato da conta Nubank</b>.

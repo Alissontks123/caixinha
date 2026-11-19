@@ -16,7 +16,7 @@ import type { AppData } from '../useAppData';
 
 type Data = AppData & { profile: Profile };
 
-export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
+export function Settings({ data, onHelp, onTour }: { data: Data; onHelp: () => void; onTour: () => void }) {
   const [editingCat, setEditingCat] = useState<Category | 'new' | null>(null);
   const [editingFixed, setEditingFixed] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -110,11 +110,14 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
         <p className="muted small">"A identificar" e "Não é gasto" são fixas e não têm limite.</p>
       </section>
 
-      <SyncSettings />
+      <div data-tour="sync"><SyncSettings /></div>
 
       <ImportSettings data={data} />
 
-      <button className="btn ghost" onClick={onHelp}>Ajuda e instalação</button>
+      <div className="grid-2">
+        <button className="btn ghost" onClick={onHelp}>Ajuda e instalação</button>
+        <button className="btn ghost" onClick={onTour}>Ver o tour de novo</button>
+      </div>
 
       <section className="card stack-sm">
         <h2>Backup</h2>

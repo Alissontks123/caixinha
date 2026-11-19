@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SyncBadge, SyncChoiceModal } from './components/SyncPanel';
 import { HelpButton } from './components/TabHelp';
 import { ThemeButton } from './components/ThemeButton';
+import { Tour, tourSeen, type TourTab } from './components/Tour';
 import { MonthPicker } from './components/ui';
 import type { Month } from './domain/types';
 import { currentMonth } from './lib/months';
@@ -33,7 +34,12 @@ export default function App() {
   const [filter, setFilter] = useState<string | undefined>();
   const [setupHelp, setSetupHelp] = useState(false);
 
+  const [touring, setTouring] = useState(false);
   const go = (t: Tab) => { setTab(t); window.scrollTo(0, 0); };
+  const tourGo = useCallback((t: TourTab) => { setFilter(undefined); setTab(t); }, []);
+  const hasProfile = !!data?.profile;
+  // tour: abre sozinho uma vez (logo depois de configurar, ou na primeira vez nesta versão)
+  useEffect(() => { if (hasProfile && !tourSeen()) setTouring(true); }, [hasProfile]);
 
   if (!data) return <div className="loading">Carregando…</div>;
   if (!data.profile) {
@@ -57,13 +63,13 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand">Olá, {d.profile.name}<SyncBadge onClick={() => go('ajustes')} /></span>
-          {(tab === 'painel' || tab === 'lancamentos') && <div className="topbar-month"><MonthPicker month={month} onChange={setMonth} /></div>}
-          <div className="topbar-actions">
+          {(tab === 'painel' || tab === 'lancamentos') && <div className="topbar-month" data-tour="month"><MonthPicker month={month} onChange={setMonth} /></div>}
+          <div className="topbar-actions" data-tour="actions">
             <ThemeButton />
             {tab !== 'ajuda' && <HelpButton topic={tab} />}
           </div>
         </div>
-        <nav className="tabbar">
+        <nav className="tabbar" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -86,10 +92,11 @@ export default function App() {
         {tab === 'importar' && <Import data={d} goToTransactions={(m) => goToTransactions(undefined, m)} />}
         {tab === 'caixinha' && <Caixinha data={d} />}
         {tab === 'historico' && <History data={d} />}
-        {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} />}
+        {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} onTour={() => { setMonth(currentMonth()); setTouring(true); }} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
       <SyncChoiceModal />
+      {touring && <Tour goTo={tourGo} onClose={() => { setTouring(false); go('painel'); }} />}
     </div>
   );
 }

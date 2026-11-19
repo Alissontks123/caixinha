@@ -33,6 +33,8 @@ await page.getByLabel('Seu nome').fill('Teste');
 await page.getByLabel(/Saldo da caixinha no fim de/).fill('0');
 await page.getByLabel('Aporte fixo mensal').fill('100');
 await page.getByRole('button', { name: 'Começar' }).click();
+// fecha o tour guiado que abre sozinho na primeira vez
+await page.getByRole('button', { name: 'Pular tour' }).click({ timeout: 5000 }).catch(() => undefined);
 await page.getByRole('button', { name: /Importar$/ }).click();
 const pdf = path.resolve('exemplos/fatura_nubank.pdf');
 if (fs.existsSync(pdf)) {

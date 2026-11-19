@@ -44,7 +44,7 @@ export function Caixinha({ data }: { data: AppData & { profile: Profile } }) {
 
   return (
     <div className="stack">
-      <section className="card hero">
+      <section className="card hero" data-tour="caixinha">
         <p className="hero-label">Saldo estimado da caixinha</p>
         <p className="hero-value">{formatMoney(ledger.balance)}</p>
         <div className="hero-split">
@@ -220,7 +220,7 @@ function GoalCard({ profile, balance }: { profile: Profile; balance: number }) {
   const has = !!profile.goalAmount && !!profile.goalMonth;
   const g = has ? goalProgress(profile.goalAmount!, profile.goalMonth!, balance, currentMonth()) : undefined;
   return (
-    <section className="card stack-sm">
+    <section className="card stack-sm" data-tour="goal">
       <div className="row-between">
         <h2 className="card-title">Meta da caixinha</h2>
         <button className="btn ghost small" onClick={() => setEditing(true)}>{has ? 'Alterar' : 'Definir meta'}</button>

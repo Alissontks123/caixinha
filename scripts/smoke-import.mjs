@@ -26,6 +26,8 @@ await page.getByLabel('A caixinha conta a partir de').fill('2026-10');
 await page.getByLabel(/Saldo da caixinha no fim de/).fill('1000');
 await page.getByLabel('Aporte fixo mensal').fill('300');
 await page.getByRole('button', { name: 'Começar' }).click();
+// fecha o tour guiado que abre sozinho na primeira vez
+await page.getByRole('button', { name: 'Pular tour' }).click({ timeout: 5000 }).catch(() => undefined);
 await page.getByText('Aportes necessários no mês').waitFor();
 
 const goImport = () => page.getByRole('button', { name: /Importar$/ }).click();

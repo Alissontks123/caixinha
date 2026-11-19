@@ -9,6 +9,8 @@ await page.getByLabel('Data do saldo').fill('2026-09-30');
 await page.getByLabel('Saldo total da caixinha nessa data').fill('1000');
 await page.getByLabel('Aporte fixo mensal').fill('300');
 await page.getByRole('button', { name: 'Começar' }).click();
+// fecha o tour guiado que abre sozinho na primeira vez
+await page.getByRole('button', { name: 'Pular tour' }).click({ timeout: 5000 }).catch(() => undefined);
 const add = async (d, v, date, cat) => {
   await page.getByRole('button', { name: '+ Novo lançamento' }).click();
   await page.getByLabel('Descrição').fill(d); await page.getByLabel('Valor').fill(v); await page.getByLabel('Data').fill(date);

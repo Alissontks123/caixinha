@@ -13,6 +13,8 @@ const log = (...a) => console.log(...a);
 
 async function device(browser, name) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // o tour guiado é testado à parte; aqui ele atrapalharia os cliques
+  await ctx.addInitScript(() => { try { localStorage.setItem('caixinha-tour-visto', '1'); } catch {} });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -64,6 +66,8 @@ async function setup(page, name, txDesc) {
   await page.getByLabel(/Saldo da caixinha no fim de/).fill('500');
   await page.getByLabel('Aporte fixo mensal').fill('200');
   await page.getByRole('button', { name: 'Começar' }).click();
+  // fecha o tour guiado que abre sozinho na primeira vez
+  await page.getByRole('button', { name: 'Pular tour' }).click({ timeout: 5000 }).catch(() => undefined);
   await page.getByText('Aportes necessários no mês').waitFor();
   if (txDesc) await addTx(page, txDesc, '100');
 }

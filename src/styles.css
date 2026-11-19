@@ -603,3 +603,24 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 /* compra parcelada: parcela por mês ou à vista */
 .installment-choice { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
 .installment-choice .segmented button { font-size: 0.82rem; padding: 7px 6px; }
+
+/* tour guiado */
+.tour-layer { position: fixed; inset: 0; z-index: 80; }
+.tour-dim { position: absolute; inset: 0; background: rgba(20, 18, 35, 0.55); animation: fadeIn 0.25s ease both; }
+.tour-spot {
+  position: fixed; border-radius: 16px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(20, 18, 35, 0.55), 0 0 0 3px var(--primary);
+  transition: top 0.35s var(--ease-out), left 0.35s var(--ease-out), width 0.35s var(--ease-out), height 0.35s var(--ease-out);
+}
+.tour-bubble {
+  position: fixed; left: 50%; transform: translateX(-50%); width: min(360px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text); border: 1px solid var(--hero-border); border-radius: 18px;
+  padding: 14px 16px; box-shadow: 0 12px 40px rgba(20, 18, 35, 0.3); display: flex; flex-direction: column; gap: 8px;
+  max-height: calc(100vh - 24px); overflow-y: auto; animation: fadeIn 0.25s ease both;
+}
+.tour-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tour-head b { font-family: var(--font-display); font-size: 1.05rem; }
+.tour-body p { margin: 0; }
+.tour-body ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.tour-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
+.tour-nav { display: flex; gap: 8px; margin-left: auto; }

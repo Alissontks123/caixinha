@@ -92,7 +92,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
 
   return (
     <div className="stack">
-      <div className="search-box">
+      <div className="search-box" data-tour="search">
         <span aria-hidden>🔍</span>
         <input
           type="search"
@@ -116,7 +116,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
       {searching ? null : closed ? (
         <p className="card muted small">Este mês está fechado. Reabra-o no Painel para alterar lançamentos.</p>
       ) : (
-        <button className="btn primary" onClick={() => setEditing('new')}>+ Novo lançamento</button>
+        <button className="btn primary" data-tour="new" onClick={() => setEditing('new')}>+ Novo lançamento</button>
       )}
       <ErrorBox error={error} />
 

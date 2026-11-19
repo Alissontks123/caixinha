@@ -164,7 +164,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
       )}
 
       {!beforeStart && (
-      <section className="card hero">
+      <section className="card hero" data-tour="hero">
           <div className="hero-top">
             <span className={`badge ${summary.closed ? 'closed' : 'open'}`}>
               {summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}
@@ -260,7 +260,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
           const order = { ['--i' as string]: i };
           if (c.contributes === false) {
             return (
-              <button key={c.categoryId} className="card cat-card" style={order} onClick={() => goToTransactions(c.categoryId)}>
+              <button key={c.categoryId} className="card cat-card" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
                 <div className="cat-head">
                   <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
                   <span className="pill neutral">Não gera aporte</span>
@@ -276,7 +276,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
           const blocks = overflowBlocks(c.spent, c.limit, c.blockSize);
           const room = roomUntilNextBlock(c.spent, c.limit, c.blockSize);
           return (
-            <button key={c.categoryId} className="card cat-card" style={order} onClick={() => goToTransactions(c.categoryId)}>
+            <button key={c.categoryId} className="card cat-card" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
               <div className="cat-head">
                 <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
                 {c.contribution > 0 && <span className="pill danger">+{formatMoney(c.contribution)}</span>}
@@ -310,7 +310,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
         <p className="muted small center">Lançamentos marcados como "Não é gasto": {formatMoney(summary.ignoredTotal)}</p>
       )}
 
-      <section className="card stack-sm">
+      <section className="card stack-sm" data-tour="close">
         {summary.closed ? (
           <>
             <p className="small">Mês fechado: os valores acima estão congelados.</p>
