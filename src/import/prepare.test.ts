@@ -125,6 +125,27 @@ describe('revisão da importação', () => {
     expect(r[2].share).toEqual({ mode: 'people', people: 4 });
   });
 
+  it('parcela seguinte e estorno de compra rateada herdam o rateio', () => {
+    const card = { last4: '1111', holder: 'A' };
+    const allocation = [{ categoryId: 'via', mode: 'amount' as const, cents: 6000 }, { categoryId: 'ali', mode: 'rest' as const }];
+    const prev: Transaction[] = [
+      { id: 't1', date: '2026-09-05', month: '2026-09', description: 'LOJA X - Parcela 1/3', amount: 9000, categoryId: 'via',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('LOJA X'), cardLast4: '1111', installment: '1/3', allocation },
+      { id: 't2', date: '2026-09-20', month: '2026-09', description: 'RESTAURANTE Y', amount: 12000, categoryId: 'via',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('RESTAURANTE Y'), cardLast4: '1111', allocation },
+    ];
+    const d = doc([
+      item({ description: 'LOJA X - Parcela 2/3', matchText: 'LOJA X', amount: 9000, card, installment: { n: 2, total: 3 } }),
+      item({ description: 'Estorno RESTAURANTE Y', amount: -12000, kind: 'estorno', card }),
+    ]);
+    const r = prepareReview(d, ctx({ transactions: prev }));
+    expect(r[0].allocation).toEqual(allocation);
+    expect(r[0].categoryId).toBe('via');
+    expect(r[0].reason).toMatch(/rateado como a parcela 1\/3/);
+    // estorno: em proporção (60 de 120 = 50%)
+    expect(r[1].allocation).toEqual([{ categoryId: 'via', mode: 'percent', percent: 50 }, { categoryId: 'ali', mode: 'rest' }]);
+  });
+
   it('compra parcelada: pergunta na primeira vez; parcelas de compra à vista não contam', () => {
     const card = { last4: '1111', holder: 'A' };
     const known: Transaction[] = [

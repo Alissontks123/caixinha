@@ -243,7 +243,7 @@ function CategoryForm({ data, category, onClose }: { data: Data; category?: Cate
   const history = category
     ? data.rules.filter((r) => r.categoryId === category.id).sort((a, b) => b.effectiveMonth.localeCompare(a.effectiveMonth))
     : [];
-  const txCount = category ? data.transactions.filter((t) => t.categoryId === category.id).length : 0;
+  const txCount = category ? data.transactions.filter((t) => t.categoryId === category.id || t.allocation?.some((p) => p.categoryId === category.id)).length : 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

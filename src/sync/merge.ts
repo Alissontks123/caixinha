@@ -99,7 +99,11 @@ export function unifyCategories(local: Snapshot, remote: Snapshot): Snapshot {
     categories: (local.categories ?? []).filter((c) => !map.has(String(c.id))),
     // as regras das categorias unificadas ficam as do Drive
     categoryRules: (local.categoryRules ?? []).filter((r) => !map.has(String(r.categoryId))),
-    transactions: (local.transactions ?? []).map((t) => ({ ...t, categoryId: re(t.categoryId) })),
+    transactions: (local.transactions ?? []).map((t) => ({
+      ...t,
+      categoryId: re(t.categoryId),
+      ...(Array.isArray(t.allocation) ? { allocation: (t.allocation as Rec[]).map((p) => ({ ...p, categoryId: re(p.categoryId) })) } : {}),
+    })),
     learnedRules: (local.learnedRules ?? []).map((r) => ({ ...r, categoryId: re(r.categoryId) })),
     closings: (local.closings ?? []).map((c) => ({
       ...c,

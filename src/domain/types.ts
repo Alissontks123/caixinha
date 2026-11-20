@@ -73,7 +73,18 @@ export interface Transaction {
   avista?: 'total' | 'skip';
   /** Gasto que se repete todo mês (assinatura, conta fixa…). Vale para o estabelecimento (ver `recurringKey`). */
   recurring?: boolean;
+  /**
+   * Rateio entre categorias (2 partes ou mais). Vale sobre a parte do usuário (depois da divisão com outras pessoas);
+   * a última parte fica com o restante. `categoryId` é sempre a categoria da 1ª parte.
+   */
+  allocation?: AllocationPart[];
 }
+
+/** Parte de um rateio: valor fixo, percentual ou o restante (sempre a última). */
+export type AllocationPart =
+  | { categoryId: string; mode: 'amount'; cents: Cents }
+  | { categoryId: string; mode: 'percent'; percent: number }
+  | { categoryId: string; mode: 'rest' };
 
 /** Como o gasto foi dividido. Os valores sempre descrevem a parte do usuário. */
 export type Share =

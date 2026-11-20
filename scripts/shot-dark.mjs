@@ -14,7 +14,7 @@ await page.getByRole('button', { name: 'Pular tour' }).click({ timeout: 5000 }).
 const add = async (d, v, date, cat) => {
   await page.getByRole('button', { name: '+ Novo lançamento' }).click();
   await page.getByLabel('Descrição').fill(d); await page.getByLabel('Valor').fill(v); await page.getByLabel('Data').fill(date);
-  await page.getByRole('dialog').getByLabel('Categoria').selectOption({ label: cat });
+  await page.getByRole('dialog').locator('select').first().selectOption({ label: cat });
   await page.getByRole('button', { name: 'Salvar' }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached' });
 };

@@ -78,7 +78,7 @@ async function addTx(page, desc, value) {
   await page.getByLabel('Descrição').fill(desc);
   await page.getByLabel('Valor').fill(value);
   await page.getByLabel('Data').fill('2026-11-05');
-  await page.getByRole('dialog').getByLabel('Categoria').selectOption({ label: 'Alimentação' });
+  await page.getByRole('dialog').locator('select').first().selectOption({ label: 'Alimentação' });
   await page.getByRole('button', { name: 'Salvar' }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached' });
 }

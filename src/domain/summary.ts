@@ -1,4 +1,4 @@
-import { myAmount } from './share';
+import { allocationParts } from './allocation';
 import { fixedForMonth, overflowContribution, ruleContributes, ruleForMonth } from './rules';
 import type {
   Category, CategoryRuleVersion, Cents, ClosedCategory, FixedContributionVersion,
@@ -32,9 +32,11 @@ export interface SummaryInput {
 export function summarizeMonth(month: Month, input: SummaryInput): MonthSummary {
   const txs = input.transactions.filter((t) => t.month === month);
   const unidentifiedIds = new Set(input.categories.filter((c) => c.kind === 'unidentified').map((c) => c.id));
-  const unidentified = txs.filter((t) => unidentifiedIds.has(t.categoryId));
+  // cada lançamento conta em uma ou mais categorias (rateio)
+  const parts = txs.map(allocationParts);
+  const unidentified = parts.filter((ps) => ps.some((p) => unidentifiedIds.has(p.categoryId)));
   const unidentifiedCount = unidentified.length;
-  const unidentifiedTotal = unidentified.reduce((s, t) => s + myAmount(t), 0);
+  const unidentifiedTotal = parts.flat().filter((p) => unidentifiedIds.has(p.categoryId)).reduce((s, p) => s + p.amount, 0);
 
   const closing = input.closings.find((c) => c.month === month);
   if (closing) {
@@ -53,7 +55,7 @@ export function summarizeMonth(month: Month, input: SummaryInput): MonthSummary 
   }
 
   const spentBy = new Map<string, Cents>();
-  for (const t of txs) spentBy.set(t.categoryId, (spentBy.get(t.categoryId) ?? 0) + myAmount(t));
+  for (const p of parts.flat()) spentBy.set(p.categoryId, (spentBy.get(p.categoryId) ?? 0) + p.amount);
 
   const categories: ClosedCategory[] = input.categories
     .filter((c) => c.kind === 'normal')
@@ -78,7 +80,7 @@ export function summarizeMonth(month: Month, input: SummaryInput): MonthSummary 
     });
 
   const ignoredIds = new Set(input.categories.filter((c) => c.kind === 'ignored').map((c) => c.id));
-  const ignoredTotal = txs.filter((t) => ignoredIds.has(t.categoryId)).reduce((s, t) => s + myAmount(t), 0);
+  const ignoredTotal = parts.flat().filter((p) => ignoredIds.has(p.categoryId)).reduce((s, p) => s + p.amount, 0);
   const fixed = fixedForMonth(input.fixedVersions, month, input.startMonth);
   const overflowTotal = categories.reduce((s, c) => s + c.contribution, 0);
 

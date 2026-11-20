@@ -646,3 +646,19 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .dup-card .segmented button:disabled { opacity: 0.4; }
 .dup-actions { display: flex; flex-direction: column; gap: 8px; }
 .dup-warning { margin-bottom: 4px; }
+
+/* rateio entre categorias */
+.alloc-box { border-top: 1px solid var(--border); padding-top: 12px; }
+.alloc-part { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--surface-2); }
+.alloc-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.alloc-line > select { flex: 1; min-width: 0; }
+.alloc-line .money-input { flex: 1; min-width: 0; }
+.alloc-pct { flex: 1; min-width: 0; max-width: 120px; }
+.segmented.alloc-mode { grid-template-columns: 1fr 1fr; flex: none; width: 92px; }
+.segmented.alloc-mode button { padding: 6px 4px; }
+.alloc-parts { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 2px; color: var(--text); }
+.alloc-parts > span { display: inline-flex; align-items: center; white-space: nowrap; }
+.alloc-parts > span.muted { color: var(--muted); }
+.alloc-chip { text-align: left; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; color: var(--text); font-weight: 600; cursor: pointer; }
+.alloc-chip:disabled { opacity: 0.6; cursor: default; }
+.alloc-link { grid-column: 1 / -1; justify-self: start; }

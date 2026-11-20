@@ -1,7 +1,8 @@
 import { matchKeyOf, normalizeText, suggestCategory } from '../domain/categorize';
 import { installmentNumber, proportionalShare, sameInstallmentPurchase } from '../domain/share';
 import { findSimilar } from '../domain/duplicates';
-import type { CaixinhaMovement, Category, ISODate, KnownCard, Month, Share, Transaction } from '../domain/types';
+import type { AllocationPart, CaixinhaMovement, Category, ISODate, KnownCard, Month, Share, Transaction } from '../domain/types';
+import { proportionalAllocation } from '../domain/allocation';
 import type { ParsedDocument, ParsedItem } from './types';
 
 export type ReviewStatus =
@@ -36,6 +37,8 @@ export interface ReviewItem {
   replacesManualId?: string;
   /** Divisão herdada (parcela seguinte de uma compra dividida, ou estorno de uma compra dividida). */
   share?: Share;
+  /** Rateio entre categorias herdado (estorno de compra rateada, parcela de compra rateada). */
+  allocation?: AllocationPart[];
   /** Compra parcelada vista pela primeira vez: perguntar "parcela por mês" ou "à vista". */
   askInstallment?: boolean;
   /** Parcela de uma compra já considerada à vista: entra desconsiderada. */
@@ -153,6 +156,12 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
         r.share = proportionalShare(previous);
         r.reason = [r.reason, 'dividido na mesma proporção da compra'].filter(Boolean).join(' · ');
       }
+      const alloc = previous && proportionalAllocation(previous);
+      if (alloc) {
+        r.allocation = alloc;
+        r.categoryId = alloc[0].categoryId;
+        r.reason = [r.reason, 'rateado na mesma proporção da compra'].filter(Boolean).join(' · ');
+      }
       continue;
     }
 
@@ -200,6 +209,14 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
     if (previous) {
       r.share = previous.share;
       r.reason = [r.reason, `dividido como a parcela ${previous.installment}`].filter(Boolean).join(' · ');
+    }
+    const allocated = ctx.transactions
+      .filter((t) => (t.allocation?.length ?? 0) >= 2 && installmentNumber(t.installment) < inst.n && sameInstallmentPurchase(me, t))
+      .sort((a, b) => installmentNumber(b.installment) - installmentNumber(a.installment))[0];
+    if (allocated && r.status === 'new') {
+      r.allocation = allocated.allocation;
+      r.categoryId = allocated.allocation![0].categoryId;
+      r.reason = [r.reason, `rateado como a parcela ${allocated.installment}`].filter(Boolean).join(' · ');
     }
     // à vista ou parcela por mês: pergunta só na primeira vez que a compra aparece
     if (r.item.amount <= 0 || r.item.kind !== 'compra') continue;

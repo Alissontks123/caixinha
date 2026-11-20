@@ -221,7 +221,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
           <ul className="item-list">
             {future.map((f, i) => (
               <li key={i}>
-                <span>{f.description}<span className="muted small"> · {f.installment} · {catName.get(f.categoryId) ?? ''}</span></span>
+                <span>{f.description}<span className="muted small"> · {f.installment} · {f.allocated ? 'rateado' : catName.get(f.categoryId) ?? ''}</span></span>
                 <b>{formatMoney(f.amount)}</b>
               </li>
             ))}

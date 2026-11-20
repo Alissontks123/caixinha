@@ -157,7 +157,7 @@ await page.getByRole('button', { name: '+ Novo lançamento' }).click();
 await page.getByLabel('Descrição').fill('Mercado grande');
 await page.getByLabel('Valor').fill('1.050');
 await page.getByLabel('Data').fill('2026-11-10');
-await page.getByRole('dialog').getByLabel('Categoria').selectOption({ label: 'Alimentação' });
+await page.getByRole('dialog').locator('select').first().selectOption({ label: 'Alimentação' });
 await page.getByRole('button', { name: 'Salvar' }).click();
 await page.locator('.toast').waitFor();
 log('Toast:', (await page.locator('.toast').innerText()).replace(/\n/g, ' | '));

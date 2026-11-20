@@ -36,6 +36,8 @@ export interface FutureInstallment {
   month: Month;
   description: string;
   categoryId: string;
+  /** Compra rateada entre categorias. */
+  allocated?: boolean;
   /** Parte do usuário (respeita a divisão). */
   amount: Cents;
   /** Ex.: "4/10". */
@@ -68,6 +70,7 @@ export function futureInstallments(transactions: Transaction[]): FutureInstallme
         month: addMonths(t.month, k - n),
         description: t.description.replace(/\s*-?\s*parcela\s*\d+\s*\/\s*\d+/i, '').trim(),
         categoryId: t.categoryId,
+        allocated: (t.allocation?.length ?? 0) >= 2 || undefined,
         amount: myAmount(t),
         installment: `${k}/${total}`,
       });

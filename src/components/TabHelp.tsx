@@ -55,6 +55,11 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
           <b> Dividir este gasto com outras pessoas</b>. Informe a sua parte por número de pessoas, percentual ou valor fixo: só a sua parte
           conta nos limites e nos aportes. Nas compras parceladas, as próximas parcelas entram com a mesma divisão, e um estorno
           da compra é dividido na mesma proporção.</p>
+        <p><b>Ratear entre categorias:</b> numa compra com coisas de categorias diferentes (ex.: supermercado com itens de casa),
+          toque nela e ligue <b>Ratear entre categorias</b>. Informe o valor ou o percentual de cada parte; a última categoria fica com
+          o restante. Cada parte conta no limite da sua categoria. O lançamento aparece como <b>Rateado</b> e, ao filtrar por categoria,
+          mostra só a parte dela. Se o gasto também foi dividido com outras pessoas, o rateio vale sobre a sua parte. As próximas
+          parcelas e os estornos seguem o mesmo rateio. Escolher uma categoria na caixa ao lado (ou em Selecionar) desfaz o rateio.</p>
         <p><b>Lançamento repetido:</b> ao criar um lançamento parecido com um que já existe, o app avisa e pergunta se mantém o que
           existe, o novo ou os dois.</p>
         <p><b>Buscar:</b> digite no campo de busca para achar lançamentos de todos os meses.</p>
@@ -79,6 +84,8 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
         <p><b>Compras parceladas:</b> na primeira vez que uma compra parcelada aparece, escolha <b>Parcela por mês</b> (cada parcela
           conta no mês da sua fatura) ou <b>À vista</b> (o total conta no mês da 1ª parcela e as próximas não contam; se a compra já
           estava no meio, ela é desconsiderada). Dá para mudar depois, tocando no lançamento na aba Gastos.</p>
+        <p><b>Ratear:</b> toque em <b>Ratear entre categorias</b> embaixo de um gasto para dividir o valor dele entre duas ou mais
+          categorias. Parcelas e estornos de compras já rateadas vêm rateados na mesma proporção.</p>
         <p><b>Lançamentos repetidos:</b> se o arquivo tiver lançamentos que já existem no app (importados antes ou lançados à mão com
           nome parecido, mesmo valor e até 3 dias de diferença), o app avisa. Você pode <b>ignorar os repetidos</b> ou <b>analisar</b> cada
           um e escolher manter o que já existe, o novo ou os dois.</p>

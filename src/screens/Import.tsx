@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { ErrorBox, Field } from '../components/ui';
+import { ErrorBox, Field, Modal } from '../components/ui';
+import { AllocationFields, allocDraftOf, parseAllocation, type AllocDraft } from '../components/AllocationFields';
+import { splitAmount, toProportional } from '../domain/allocation';
 import { saveCards, saveImport, setC6Password, type ImportResult } from '../db/repo';
 import { UNIDENTIFIED_ID } from '../db/db';
 import { alertsForChange, describeAlert, type ChangeAlert } from '../domain/alerts';
-import type { Category, KnownCard, Month, Transaction } from '../domain/types';
+import type { AllocationPart, Category, KnownCard, Month, Transaction } from '../domain/types';
 import { readPdfInBrowser } from '../import/pdfBrowser';
 import { parseDocument } from '../import/parse';
 import { cardsInDocument, prepareReview, resolveCategory, type ReviewItem, type ReviewStatus } from '../import/prepare';
@@ -220,15 +222,16 @@ export function Import({ data, goToTransactions }: Props) {
           categories={data.categories}
           cancelLabel={multi ? 'Pular arquivo' : 'Cancelar'}
           onCancel={cancelCurrent}
-          onConfirm={async (choices, caixinhaIncluded, avistaChosen) => {
+          onConfirm={async (choices, caixinhaIncluded, avistaChosen, allocations) => {
             // simula o "depois" para avisar sobre limites e novos blocos de aporte
             const newTx: Transaction[] = phase.review.filter((r) => r.status === 'new').map((r) => ({
               id: `__import_${r.index}`, date: r.item.date, month: r.item.month, description: r.item.description,
               amount: shareOf(reviewAmount(r, avistaChosen), r.share), categoryId: resolveCategory(phase.review, choices, r.index) || UNIDENTIFIED_ID,
               source: phase.doc.source, createdAt: 0,
+              ...(allocations.get(r.index)?.length ? { allocation: allocations.get(r.index), categoryId: allocations.get(r.index)![0].categoryId } : {}),
             }));
             const alerts = alertsForChange(summaryInput(data), [...data.transactions, ...newTx], newTx.map((t) => t.month), data.profile.alertThreshold);
-            const result = await saveImport(phase.doc, phase.review, choices, caixinhaIncluded, avistaChosen);
+            const result = await saveImport(phase.doc, phase.review, choices, caixinhaIncluded, avistaChosen, allocations);
             const month = mostCommon(newTx.map((t) => t.month));
             if (multi) finishFile({ label: phase.doc.label, result }, alerts, month);
             else setPhase({ step: 'done', doc: phase.doc, result, month, alerts });
@@ -352,10 +355,13 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
   cancelLabel?: string;
   review: ReviewItem[];
   categories: Category[];
-  onConfirm: (choices: Map<number, string>, caixinhaIncluded: Set<number>, avista: Set<number>) => Promise<void>;
+  onConfirm: (choices: Map<number, string>, caixinhaIncluded: Set<number>, avista: Set<number>, allocations: Map<number, AllocationPart[]>) => Promise<void>;
   onCancel: () => void;
 }) {
   const [choices, setChoices] = useState(() => new Map<number, string>());
+  // rateio entre categorias de cada item (começa com o herdado: parcela ou estorno de compra rateada)
+  const [allocs, setAllocs] = useState(() => new Map(review.filter((r) => r.allocation).map((r) => [r.index, r.allocation!])));
+  const [allocating, setAllocating] = useState<ReviewItem | null>(null);
   const caixinha = review.filter((r) => r.status === 'caixinha');
   const [included, setIncluded] = useState(() => new Set(caixinha.map((r) => r.index)));
   const toggleIncluded = (index: number, on: boolean) =>
@@ -376,7 +382,17 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
   const fresh = review.filter((r) => r.status === 'new');
   // a lista "precisa escolher" é fixada ao abrir, para os itens não pularem de seção enquanto o usuário escolhe
   const askIndexes = useMemo(() => new Set(fresh.filter((r) => !resolveCategory(review, new Map(), r.index)).map((r) => r.index)), [review]);
-  const pending = fresh.filter((r) => !resolveCategory(review, choices, r.index));
+  const amountOf = (r: ReviewItem) => shareOf(reviewAmount(r, avista), r.share);
+  // estorno ou IOF ligado a uma compra rateada segue o rateio dela, na mesma proporção
+  const allocOf = (r: ReviewItem, depth = 0): AllocationPart[] | undefined => {
+    if (allocs.has(r.index)) return allocs.get(r.index)!.length >= 2 ? allocs.get(r.index) : undefined;
+    if (r.linkTo !== undefined && depth < 5) {
+      const target = review[r.linkTo];
+      return toProportional(amountOf(target), allocOf(target, depth + 1));
+    }
+    return undefined;
+  };
+  const pending = fresh.filter((r) => !resolveCategory(review, choices, r.index) && !allocOf(r));
   const failedChecks = doc.checks.filter((c) => c.expected !== c.found);
   const total = fresh.reduce((s, r) => s + r.item.amount, 0);
 
@@ -400,7 +416,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
     setSaving(true);
     setError(null);
     try {
-      await onConfirm(choices, included, avista);
+      await onConfirm(choices, included, avista, new Map(fresh.map((r) => [r.index, allocOf(r) ?? []])));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setSaving(false);
@@ -409,6 +425,7 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
 
   const row = (r: ReviewItem, editable: boolean) => {
     const value = resolveCategory(review, choices, r.index);
+    const alloc = editable ? allocOf(r) : undefined;
     const it = r.item;
     const meta = [
       dateLabel(it.date),
@@ -418,18 +435,33 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
       r.share && `total ${formatMoney(it.amount)}`,
     ].filter(Boolean).join(' · ');
     return (
-      <div key={r.index} className={`tx-row ${editable && !value ? 'needs' : ''}`}>
+      <div key={r.index} className={`tx-row ${editable && !value && !alloc ? 'needs' : ''}`}>
         <div className="tx-main static">
           <span className="tx-desc">{it.description}</span>
           <span className="tx-meta muted small">{meta}</span>
           {(r.reason || it.ignoreReason) && <span className="tx-meta muted small">{it.ignoreReason ?? r.reason}</span>}
+          {alloc && (
+            <span className="alloc-parts small">
+              {splitAmount(amountOf(r), alloc).map((v, k) => {
+                const c = categories.find((x) => x.id === alloc[k].categoryId);
+                return <span key={k}><span className="dot" style={{ background: c?.color }} />{c?.name ?? '—'} {formatMoney(v)}</span>;
+              })}
+            </span>
+          )}
         </div>
         <span className={`tx-amount ${it.amount < 0 ? 'refund' : ''}`}>{formatMoney(shareOf(reviewAmount(r, avista), r.share))}</span>
-        {editable && (
+        {editable && alloc && (
+          <button type="button" className="cat-select alloc-chip" onClick={() => setAllocating(r)}
+            aria-label={`Rateado entre ${alloc.length} categorias: toque para editar`}>Rateado ({alloc.length})</button>
+        )}
+        {editable && !alloc && (
           <select className="cat-select" aria-label={`Categoria de ${it.description}`} value={value} onChange={(e) => choose(r, e.target.value)}>
             {!value && <option value="">Escolha a categoria…</option>}
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+        )}
+        {editable && !alloc && it.amount !== 0 && (
+          <button type="button" className="link-btn small alloc-link" onClick={() => setAllocating(r)}>Ratear entre categorias</button>
         )}
         {editable && askIndexes.has(r.index) && <MerchantHint text={it.matchText || it.description} />}
         {editable && r.askInstallment && it.installment && (
@@ -530,6 +562,18 @@ function ReviewStep({ doc, review, categories, onConfirm, onCancel, cancelLabel 
         </details>
       ))}
 
+      {allocating && (
+        <AllocationModal
+          title={allocating.item.description}
+          base={amountOf(allocating)}
+          initial={allocOf(allocating)}
+          categoryId={resolveCategory(review, choices, allocating.index)}
+          categories={categories}
+          onSave={(parts) => setAllocs((m) => new Map(m).set(allocating.index, parts ?? []))}
+          onClose={() => setAllocating(null)}
+        />
+      )}
+
       <ErrorBox error={error} />
       <div className="sticky-footer">
         <button className="btn ghost" onClick={onCancel} disabled={saving}>{cancelLabel}</button>
@@ -629,5 +673,39 @@ function AnalyzeDuplicates({ review, existing, categories, closedMonths, onDone 
         <button className="btn primary" onClick={finish}>Continuar para a revisão</button>
       </div>
     </div>
+  );
+}
+
+/** Janela para ratear um item da revisão entre categorias. */
+function AllocationModal({ title, base, initial, categoryId, categories, onSave, onClose }: {
+  title: string;
+  base: number;
+  initial?: AllocationPart[];
+  categoryId: string;
+  categories: Category[];
+  onSave: (parts: AllocationPart[] | undefined) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<AllocDraft>(() => ({ ...allocDraftOf(initial, categoryId, categories), on: true }));
+  const [error, setError] = useState<string | null>(null);
+  const save = () => {
+    const parsed = parseAllocation(draft, base);
+    if (typeof parsed === 'string') return setError(parsed);
+    onSave(parsed);
+    onClose();
+  };
+  return (
+    <Modal title="Ratear entre categorias" onClose={onClose}>
+      <div className="stack">
+        <p className="small"><b>{title}</b> · {formatMoney(base)}</p>
+        <AllocationFields value={draft} onChange={(v) => { setDraft(v); setError(null); }} base={base} categories={categories}
+          note="Desligue e toque em Aplicar para voltar a uma categoria só." />
+        <ErrorBox error={error} />
+        <div className="row-end">
+          <button type="button" className="btn ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn primary" onClick={save}>Aplicar</button>
+        </div>
+      </div>
+    </Modal>
   );
 }

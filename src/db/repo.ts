@@ -4,7 +4,7 @@ import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES,
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
 import type {
-  CaixinhaMovement, Category, Cents, ISODate, KnownCard, LearnedRule, Month, Profile, Transaction,
+  AllocationPart, CaixinhaMovement, Category, Cents, ISODate, KnownCard, LearnedRule, Month, Profile, Transaction,
 } from '../domain/types';
 import { resolveCategory, type ReviewItem } from '../import/prepare';
 import type { ParsedDocument } from '../import/types';
@@ -85,17 +85,27 @@ export async function saveTransaction(
     createdAt: old?.createdAt ?? Date.now(),
   };
   if (!tx.share) delete tx.share;
+  if ((tx.allocation?.length ?? 0) < 2) delete tx.allocation;
+  else tx.categoryId = tx.allocation![0].categoryId;
+  const changedShare = JSON.stringify(old?.share) !== JSON.stringify(tx.share);
+  const changedAllocation = JSON.stringify(old?.allocation) !== JSON.stringify(tx.allocation);
   await db.transaction('rw', [db.transactions, db.closings], async () => {
     await db.transactions.put(tx);
-    // dividiu (ou deixou de dividir) uma parcela: as parcelas seguintes já importadas seguem a mesma divisão
-    if (tx.installment && JSON.stringify(old?.share) !== JSON.stringify(tx.share)) {
+    // dividiu ou rateou (ou desfez) uma parcela: as parcelas seguintes já importadas seguem igual
+    if (tx.installment && (changedShare || changedAllocation)) {
       const closed = new Set((await db.closings.toArray()).map((c) => c.month));
       const n = installmentNumber(tx.installment);
       const later = (await db.transactions.where({ matchKey: tx.matchKey ?? '' }).toArray())
         .filter((t) => t.id !== tx.id && !closed.has(t.month) && installmentNumber(t.installment) > n && sameInstallmentPurchase(tx, t));
       for (const t of later) {
-        const next = { ...t, share: tx.share };
+        const next = { ...t };
+        if (changedShare) next.share = tx.share;
+        if (changedAllocation) {
+          next.allocation = tx.allocation;
+          if (tx.allocation || old?.allocation) next.categoryId = tx.categoryId;
+        }
         if (!next.share) delete next.share;
+        if (!next.allocation) delete next.allocation;
         await db.transactions.put(next);
       }
     }
@@ -113,26 +123,27 @@ export type Undo = () => Promise<void>;
 export async function setCategoryForMany(ids: string[], categoryId: string): Promise<Undo> {
   const txs = (await db.transactions.bulkGet(ids)).filter((t): t is Transaction => !!t);
   for (const t of txs) await assertMonthOpen(t.month);
-  const before = new Map<string, string>();
+  const before = new Map<string, { categoryId: string; allocation?: AllocationPart[] }>();
   const rulesBefore = new Map<string, LearnedRule | undefined>();
   await db.transaction('rw', [db.transactions, db.learnedRules, db.closings], async () => {
     const closed = new Set((await db.closings.toArray()).map((c) => c.month));
     for (const tx of txs) {
-      if (!before.has(tx.id)) before.set(tx.id, tx.categoryId);
+      if (!before.has(tx.id)) before.set(tx.id, { categoryId: tx.categoryId, allocation: tx.allocation });
       if (tx.learnable && tx.matchKey && categoryId !== UNIDENTIFIED_ID) {
         if (!rulesBefore.has(tx.matchKey)) rulesBefore.set(tx.matchKey, await db.learnedRules.get(tx.matchKey));
         // lançamentos que a memorização vai mudar junto
         const others = await db.transactions.where({ matchKey: tx.matchKey })
           .filter((t) => t.categoryId === UNIDENTIFIED_ID && !!t.learnable && !closed.has(t.month)).toArray();
-        for (const o of others) if (!before.has(o.id)) before.set(o.id, o.categoryId);
+        for (const o of others) if (!before.has(o.id)) before.set(o.id, { categoryId: o.categoryId, allocation: o.allocation });
       }
-      await db.transactions.update(tx.id, { categoryId });
+      // escolher uma categoria desfaz o rateio
+      await db.transactions.update(tx.id, { categoryId, allocation: undefined });
       if (tx.learnable && tx.matchKey) await learn(tx.matchKey, categoryId, tx.description);
     }
   });
   return async () => {
     await db.transaction('rw', [db.transactions, db.learnedRules], async () => {
-      for (const [id, cat] of before) await db.transactions.update(id, { categoryId: cat });
+      for (const [id, b] of before) await db.transactions.update(id, { categoryId: b.categoryId, allocation: b.allocation });
       for (const [key, rule] of rulesBefore) {
         if (rule) await db.learnedRules.put(rule);
         else await db.learnedRules.delete(key);
@@ -179,6 +190,8 @@ export async function saveImport(
   caixinhaIncluded: Set<number> = new Set(),
   /** Compras parceladas que o usuário escolheu considerar à vista. */
   avistaChosen: Set<number> = new Set(),
+  /** Rateio de cada item (já resolvido na revisão; lista vazia = sem rateio). */
+  allocations: Map<number, AllocationPart[]> = new Map(),
 ): Promise<ImportResult> {
   const now = Date.now();
   const closed = new Set((await db.closings.toArray()).map((c) => c.month));
@@ -213,6 +226,8 @@ export async function saveImport(
     const it = r.item;
     const old = r.duplicateChoice === 'new' && r.duplicateOf ? oldById.get(r.duplicateOf) : undefined;
     if (old) replacedTx.push(old.id);
+    const own = allocations.has(r.index) ? allocations.get(r.index) : r.allocation;
+    const allocation = old?.allocation ?? (own && own.length >= 2 ? own : undefined);
     toSave.push({
       id: uid(),
       date: it.date,
@@ -232,6 +247,7 @@ export async function saveImport(
       // à vista: a 1ª parcela conta pelo total; vista a partir do meio, a compra é desconsiderada
       avista: r.askInstallment && avistaChosen.has(r.index) ? (it.installment?.n === 1 ? 'total' : 'skip') : r.avista,
       ...(old ? { note: old.note, recurring: old.recurring, share: old.share ?? r.share } : {}),
+      ...(allocation ? { allocation, categoryId: allocation[0].categoryId } : {}),
     });
     // memoriza só o que o usuário escolheu ou corrigiu (o que a regra automática já acerta não precisa)
     const userChose = choices.has(r.index) && choices.get(r.index) !== r.categoryId;
@@ -348,6 +364,11 @@ export async function deleteCategory(id: string, moveTo: string = UNIDENTIFIED_I
   await db.transaction('rw', [db.categories, db.categoryRules, db.transactions], async () => {
     // meses fechados mantêm os valores congelados; os lançamentos só trocam de categoria
     await db.transactions.where({ categoryId: id }).modify({ categoryId: moveTo });
+    // partes de rateios nessa categoria vão para a mesma categoria
+    await db.transactions.filter((t) => !!t.allocation?.some((p) => p.categoryId === id)).modify((t) => {
+      t.allocation = t.allocation!.map((p) => (p.categoryId === id ? { ...p, categoryId: moveTo } : p));
+      t.categoryId = t.allocation[0].categoryId;
+    });
     await db.categoryRules.where({ categoryId: id }).delete();
     await db.categories.delete(id);
   });

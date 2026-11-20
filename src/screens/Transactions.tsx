@@ -5,6 +5,8 @@ import { UNIDENTIFIED_ID } from '../db/db';
 import { clearRecurring, deleteTransaction, saveTransaction, setCategoryForMany, setInstallmentMode } from '../db/repo';
 import { recurringKey } from '../domain/insights';
 import { findSimilar } from '../domain/duplicates';
+import { allocationParts, amountInCategory, categoriesOf, isAllocated } from '../domain/allocation';
+import { AllocationFields, allocDraftOf, parseAllocation, type AllocDraft } from '../components/AllocationFields';
 import { normalizeText } from '../domain/categorize';
 import { alertsForChange, describeAlert } from '../domain/alerts';
 import { describeShare, effectiveAmount, myAmount, shareOf } from '../domain/share';
@@ -54,14 +56,16 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
   const searching = q.length > 0;
   const all = data.transactions
     .filter((t) => (searching
-      ? normalizeText(`${t.description} ${t.note ?? ''} ${catById.get(t.categoryId)?.name ?? ''}`).includes(q)
+      ? normalizeText(`${t.description} ${t.note ?? ''} ${categoriesOf(t).map((id) => catById.get(id)?.name ?? '').join(' ')}`).includes(q)
       : t.month === month))
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  const list = filter ? all.filter((t) => t.categoryId === filter) : all;
-  const total = list.reduce((s, t) => s + myAmount(t), 0);
+  // rateados aparecem em cada categoria do rateio, com o valor daquela parte
+  const list = filter ? all.filter((t) => categoriesOf(t).includes(filter)) : all;
+  const shownAmount = (t: Transaction) => (filter ? amountInCategory(t, filter) : myAmount(t));
+  const total = list.reduce((s, t) => s + shownAmount(t), 0);
 
   const counts = new Map<string, number>();
-  for (const t of all) counts.set(t.categoryId, (counts.get(t.categoryId) ?? 0) + 1);
+  for (const t of all) for (const id of categoriesOf(t)) counts.set(id, (counts.get(id) ?? 0) + 1);
 
   // agrupa por data
   const groups: { date: string; items: Transaction[] }[] = [];
@@ -80,7 +84,7 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
         undo: async () => { await undoFn?.(); },
       });
       const months = [...new Set(data.transactions.filter((x) => ids.includes(x.id)).map((x) => x.month))];
-      notify(data.transactions.map((x) => (ids.includes(x.id) ? { ...x, categoryId } : x)), months);
+      notify(data.transactions.map((x) => (ids.includes(x.id) ? { ...x, categoryId, allocation: undefined } : x)), months);
     }
   };
   const toggle = (id: string) => setSelected((s) => {
@@ -169,12 +173,29 @@ export function Transactions({ data, month, filter, setFilter }: Props) {
                             t.avista === 'total' && `à vista: ${t.installment?.split('/')[1]} × ${formatMoney(t.amount)}`,
                             t.avista === 'skip' && 'compra considerada à vista (não conta)',
                             t.share && `dividido · total ${formatMoney(effectiveAmount(t))}`,
+                            filter && isAllocated(t) && `parte de ${formatMoney(myAmount(t))}`,
                             t.note,
                           ].filter(Boolean).join(' · ')}
                         </span>
+                        {isAllocated(t) && (
+                          <span className="alloc-parts small">
+                            {allocationParts(t).map((p) => (
+                              <span key={p.categoryId} className={filter && filter !== p.categoryId ? 'muted' : ''}>
+                                <span className="dot" style={{ background: catById.get(p.categoryId)?.color }} />
+                                {catById.get(p.categoryId)?.name ?? '—'} {formatMoney(p.amount)}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                       </button>
-                      <span className={`tx-amount ${t.amount < 0 ? 'refund' : ''}`}>{formatMoney(myAmount(t))}</span>
-                      {!selecting && (
+                      <span className={`tx-amount ${t.amount < 0 ? 'refund' : ''}`}>{formatMoney(shownAmount(t))}</span>
+                      {!selecting && isAllocated(t) && (
+                        <button type="button" className="cat-select alloc-chip" disabled={rowClosed} onClick={() => setEditing(t)}
+                          aria-label={`Rateado entre ${allocationParts(t).length} categorias: toque para editar`}>
+                          Rateado ({allocationParts(t).length})
+                        </button>
+                      )}
+                      {!selecting && !isAllocated(t) && (
                         <CategorySelect
                           categories={data.categories}
                           value={t.categoryId}
@@ -276,6 +297,15 @@ function TransactionForm({
   const [recurring, setRecurring] = useState(wasRecurring);
   const [avistaMode, setAvistaMode] = useState(!!initial?.avista);
   const [split, setSplit] = useState<SplitDraft>(() => splitDraftOf(initial?.share));
+  const [alloc, setAlloc] = useState<AllocDraft>(() => allocDraftOf(initial?.allocation, categoryId, categories));
+  // valor que é rateado: a parte do usuário (depois da divisão com outras pessoas e da compra à vista)
+  const allocBase = (() => {
+    const c = parseMoney(amount);
+    if (c === null || c <= 0) return null;
+    const sh = parseSplit(split, c);
+    const avista = avistaMode ? (initial?.avista ?? (initial?.installment?.startsWith('1/') ? 'total' : 'skip')) : undefined;
+    return myAmount({ amount: isRefund ? -c : c, share: typeof sh === 'string' ? undefined : sh, avista, installment: initial?.installment });
+  })();
   const { error, setError, run } = useAction();
   // lançamento novo parecido com um que já existe: pergunta o que manter antes de salvar
   const [twin, setTwin] = useState<Transaction | null>(null);
@@ -288,6 +318,8 @@ function TransactionForm({
     if (cents === null || cents <= 0) return setError('Informe um valor maior que zero.');
     const share = parseSplit(split, cents);
     if (typeof share === 'string') return setError(share);
+    const allocation = parseAllocation(alloc, allocBase ?? 0);
+    if (typeof allocation === 'string') return setError(allocation);
     const draft = {
       id: initial?.id,
       date,
@@ -295,7 +327,8 @@ function TransactionForm({
       month: initial && initial.source !== 'manual' ? initial.month : monthOf(date),
       description: description.trim(),
       amount: isRefund ? -cents : cents,
-      categoryId,
+      categoryId: allocation ? allocation[0].categoryId : categoryId,
+      allocation,
       source: initial?.source ?? 'manual',
       note: note.trim() || undefined,
       recurring: recurring || undefined,
@@ -340,13 +373,13 @@ function TransactionForm({
             <div className="dup-side kept">
               <span className="dup-tag">Já existe</span>
               <b>{twin.description}</b>
-              <span className="small muted">{dateLabel(twin.date)} · {categories.find((c) => c.id === twin.categoryId)?.name ?? ''}</span>
+              <span className="small muted">{dateLabel(twin.date)} · {isAllocated(twin) ? 'rateado' : categories.find((c) => c.id === twin.categoryId)?.name ?? ''}</span>
               <span className="dup-amount">{formatMoney(twin.amount)}</span>
             </div>
             <div className="dup-side kept">
               <span className="dup-tag">Novo</span>
               <b>{description.trim()}</b>
-              <span className="small muted">{date ? dateLabel(date) : ''} · {categories.find((c) => c.id === categoryId)?.name ?? ''}</span>
+              <span className="small muted">{date ? dateLabel(date) : ''} · {alloc.on ? 'rateado' : categories.find((c) => c.id === categoryId)?.name ?? ''}</span>
               <span className="dup-amount">{formatMoney((isRefund ? -1 : 1) * (parseMoney(amount) ?? 0))}</span>
             </div>
           </div>
@@ -371,11 +404,21 @@ function TransactionForm({
           <Field label="Valor"><MoneyInput value={amount} onChange={setAmount} /></Field>
           <Field label="Data"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         </div>
-        <Field label="Categoria">
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </Field>
+        {!alloc.on && (
+          <Field label="Categoria">
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </Field>
+        )}
+        <AllocationFields
+          value={alloc}
+          // ao ligar, a 1ª parte começa com a categoria escolhida no campo
+          onChange={(v) => setAlloc(v.on && !alloc.on && !initial?.allocation ? { on: true, parts: allocDraftOf(undefined, categoryId, categories).parts } : v)}
+          base={allocBase}
+          categories={categories}
+          note={initial?.installment ? 'As próximas parcelas desta compra também serão rateadas assim.' : undefined}
+        />
         {initial?.installment && initial.amount > 0 && (
           <div className="stack-sm">
             <span className="field-label">Compra parcelada ({initial.installment})</span>
@@ -399,7 +442,7 @@ function TransactionForm({
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
         <SplitFields value={split} onChange={setSplit} total={parseMoney(amount)} installment={initial?.installment} />
-        {isRefund && <p className="muted small">Estornos abatem o total da categoria escolhida.</p>}
+        {isRefund && <p className="muted small">Estornos abatem o total da categoria escolhida{alloc.on ? ' (no rateio, de cada categoria)' : ''}.</p>}
         <ErrorBox error={error} />
         <div className="row-end">
           {initial && <button type="button" className="btn danger-ghost" onClick={remove}>Excluir</button>}
