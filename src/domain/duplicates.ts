@@ -27,17 +27,20 @@ export function namesSimilar(a: string, b: string): boolean {
 
 const dayNumber = (d: ISODate) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
 
-/** Mesmo valor, até 3 dias de diferença e nome parecido. */
-export function isSimilarTransaction(
-  a: { description: string; amount: Cents; date: ISODate },
-  b: { description: string; amount: Cents; date: ISODate },
-): boolean {
+type Comparable = { description: string; amount: Cents; date: ISODate; installment?: string };
+
+/**
+ * Mesmo valor, até 3 dias de diferença e nome parecido.
+ * Parcelas diferentes da mesma compra (ex.: 1/3 e 2/3) nunca são repetidas: na C6 todas têm a data da compra.
+ */
+export function isSimilarTransaction(a: Comparable, b: Comparable): boolean {
+  if (a.installment && b.installment && a.installment !== b.installment) return false;
   return a.amount === b.amount && Math.abs(dayNumber(a.date) - dayNumber(b.date)) <= 3 && namesSimilar(a.description, b.description);
 }
 
 /** Lançamento já existente parecido com o novo (o mais próximo na data). */
 export function findSimilar(
-  candidate: { description: string; amount: Cents; date: ISODate },
+  candidate: Comparable,
   existing: Transaction[],
   exclude: Set<string> = new Set(),
 ): Transaction | undefined {

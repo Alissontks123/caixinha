@@ -189,8 +189,10 @@ export function prepareReview(doc: ParsedDocument, ctx: PrepareContext): ReviewI
   const used = new Set(review.map((r) => r.duplicateOf).filter((x): x is string => !!x));
   for (const r of active) {
     if (r.item.kind === 'iof') continue;
-    const twin = findSimilar({ description: r.item.matchText || r.item.description, amount: r.item.amount, date: r.item.date }, ctx.transactions, used)
-      ?? findSimilar({ description: r.item.description, amount: r.item.amount, date: r.item.date }, ctx.transactions, used);
+    const inst = r.item.installment && `${r.item.installment.n}/${r.item.installment.total}`;
+    const base = { amount: r.item.amount, date: r.item.date, installment: inst || undefined };
+    const twin = findSimilar({ ...base, description: r.item.matchText || r.item.description }, ctx.transactions, used)
+      ?? findSimilar({ ...base, description: r.item.description }, ctx.transactions, used);
     if (!twin) continue;
     used.add(twin.id);
     r.status = 'duplicate';

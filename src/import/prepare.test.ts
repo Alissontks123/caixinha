@@ -193,6 +193,20 @@ describe('revisão da importação', () => {
     expect(again[2].categoryId).toBe('via');
   });
 
+  it('parcela seguinte (mesma data da compra, como na C6) não é tratada como repetida da anterior', () => {
+    const card = { last4: '1111', holder: 'A' };
+    const prev: Transaction[] = [
+      { id: 'p1', date: '2026-09-05', month: '2026-09', description: 'LOJA X - Parcela 1/3', amount: 9000, categoryId: 'ali',
+        source: 'fatura-c6', createdAt: 0, matchKey: matchKeyOf('LOJA X'), cardLast4: '1111', installment: '1/3' },
+    ];
+    const d = doc([
+      item({ description: 'LOJA X - Parcela 2/3', matchText: 'LOJA X', date: '2026-09-05', month: '2026-10', amount: 9000, card, installment: { n: 2, total: 3 } }),
+    ]);
+    const r = prepareReview(d, ctx({ transactions: prev }));
+    expect(r[0].status).toBe('new');
+    expect(r[0].duplicateOf).toBeUndefined();
+  });
+
   it('marca duplicados, mês fechado, ignorados e cartões de outra pessoa', () => {
     const items = [
       item({ description: 'A' }),
