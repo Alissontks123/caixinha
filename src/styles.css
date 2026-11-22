@@ -876,3 +876,15 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .preview-hero:has(.hero-fx-aquario) { padding-bottom: 24px; }
 .preview-hero .fx-waves { height: 10px; background-image: radial-gradient(circle at 7px -3px, transparent 6px, rgba(255, 255, 255, 0.22) 7px); background-size: 14px 10px; }
 .preview-hero .fx-fish { bottom: -2px; }
+
+/* cartão da Caixinha (mesmo estilo do cartão do mês): os valores ficam em caixinhas claras, legíveis em qualquer tema */
+.hero-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.hero-split > div {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 8px 12px; border-radius: 12px;
+  background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums;
+}
+.hero-split .muted { color: var(--muted); font-size: 0.8rem; }
+.hero > .muted { color: inherit; opacity: 0.9; margin-top: 8px; }
+/* aviso amarelo: texto em coluna; só o do Painel (com ícone) fica em linha */
+.warn-card { flex-direction: column; align-items: flex-start; gap: 2px; }
+.warn-card:has(.warn-icon) { flex-direction: row; align-items: center; gap: 12px; }
