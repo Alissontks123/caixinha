@@ -1,7 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { updateProfile } from '../db/repo';
-import { AVATARS, avatarById, DEFAULT_AVATAR, isAvatarUnlocked, TIER_LABEL, type AvatarTier } from '../lib/avatars';
-import { Icon, ICONS } from './icons';
+import { AVATARS, avatarById, DEFAULT_AVATAR, TIER_LABEL, type AvatarTier } from '../lib/avatars';
+import { avatarOwned, shopItem, type ShopItem } from '../lib/shop';
+import type { StarsState } from '../useStars';
+import { BuyDialog } from './BuyDialog';
+import { Icon, ICONS, StarIcon } from './icons';
 import { ErrorBox, Modal, useAction } from './ui';
 
 /** Desenho de cada avatar (caixa 100×100). */
@@ -164,12 +167,12 @@ export function AvatarImage({ id, size = 40 }: { id?: string; size?: number }) {
 
 const TIERS: { tier: AvatarTier; hint: string }[] = [
   { tier: 'standard', hint: 'grátis para todos' },
-  { tier: 'shop', hint: 'em breve na loja de pontos' },
-  { tier: 'premium', hint: 'em breve na loja · animados' },
+  { tier: 'shop', hint: 'compre com estrelas' },
+  { tier: 'premium', hint: 'compre com estrelas · animados' },
 ];
 
 /** Botão do topo com o avatar; abre a escolha. */
-export function AvatarButton({ current }: { current?: string }) {
+export function AvatarButton({ current, stars }: { current?: string; stars: StarsState }) {
   const [open, setOpen] = useState(false);
   const a = avatarById(current ?? DEFAULT_AVATAR);
   return (
@@ -177,38 +180,37 @@ export function AvatarButton({ current }: { current?: string }) {
       <button type="button" className="avatar-btn" aria-label={`Seu avatar: ${a.name}. Toque para trocar`} title="Trocar avatar" onClick={() => setOpen(true)}>
         <AvatarImage id={a.id} size={40} />
       </button>
-      {open && <AvatarPicker current={a.id} onClose={() => setOpen(false)} />}
+      {open && <AvatarPicker current={a.id} stars={stars} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function AvatarPicker({ current, onClose }: { current: string; onClose: () => void }) {
+function AvatarPicker({ current, stars, onClose }: { current: string; stars: StarsState; onClose: () => void }) {
   const { error, run } = useAction();
-  const [notice, setNotice] = useState<string | null>(null);
-  const pick = (id: string, name: string) => {
-    if (!isAvatarUnlocked(id)) { setNotice(`${name}: disponível na loja em breve.`); return; }
-    setNotice(null);
+  const [buying, setBuying] = useState<ShopItem | null>(null);
+  const pick = (id: string) => {
+    if (!avatarOwned(id, stars.owned)) { setBuying(shopItem(`avatar:${id}`) ?? null); return; }
     void run(async () => { await updateProfile({ avatar: id }); onClose(); });
   };
   return (
     <Modal title="Escolha seu avatar" onClose={onClose}>
       <div className="stack-sm">
-        <p className="small muted">O avatar aparece no topo e vale em todos os seus aparelhos.</p>
-        {notice && <p className="ok-box" role="status">{notice}</p>}
+        <p className="small muted">O avatar aparece no topo e vale em todos os seus aparelhos. Você tem <b>{stars.balance}</b> estrelas.</p>
         {TIERS.map(({ tier, hint }) => (
           <section key={tier} className="stack-sm">
             <h3 className="avatar-tier">{TIER_LABEL[tier]} <span className="small muted">{hint}</span></h3>
             <div className="avatar-grid">
               {AVATARS.filter((a) => a.tier === tier).map((a) => {
-                const unlocked = isAvatarUnlocked(a.id);
+                const unlocked = avatarOwned(a.id, stars.owned);
+                const price = shopItem(`avatar:${a.id}`)?.price;
                 const inUse = a.id === current;
                 return (
                   <button key={a.id} type="button" className={`avatar-option ${inUse ? 'selected' : ''} ${unlocked ? '' : 'locked'}`}
-                    aria-pressed={inUse} aria-label={`${a.name}${inUse ? ', em uso' : unlocked ? '' : ', bloqueado'}`} onClick={() => pick(a.id, a.name)}>
+                    aria-pressed={inUse} aria-label={`${a.name}${inUse ? ', em uso' : unlocked ? '' : `, comprar por ${price} estrelas`}`} onClick={() => pick(a.id)}>
                     <AvatarImage id={a.id} size={60} />
                     <span className="avatar-name">{a.name}</span>
                     <span className="avatar-status">
-                      {inUse ? <><Icon d={ICONS.check} size={12} width={2.4} /> Em uso</> : unlocked ? 'Usar' : <><Icon d={ICONS.lock} size={12} width={2.2} /> Em breve</>}
+                      {inUse ? <><Icon d={ICONS.check} size={12} width={2.4} /> Em uso</> : unlocked ? 'Usar' : <><StarIcon size={11} /> {price}</>}
                     </span>
                   </button>
                 );
@@ -218,6 +220,7 @@ function AvatarPicker({ current, onClose }: { current: string; onClose: () => vo
         ))}
         <ErrorBox error={error} />
       </div>
+      {buying && <BuyDialog item={buying} balance={stars.balance} onClose={() => setBuying(null)} />}
     </Modal>
   );
 }

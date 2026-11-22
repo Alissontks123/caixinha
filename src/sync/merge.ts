@@ -20,6 +20,7 @@ export const SYNC_TABLES: { name: string; key: string }[] = [
   { name: 'caixinha', key: 'id' },
   { name: 'learnedRules', key: 'key' },
   { name: 'cards', key: 'id' },
+  { name: 'stars', key: 'id' },
 ];
 
 /** JSON com chaves ordenadas (em todos os níveis), para comparar registros. */
@@ -56,7 +57,8 @@ export function mergeSnapshots(base: Snapshot | null, local: Snapshot, remote: S
   for (const { name, key } of SYNC_TABLES) {
     const B = index(base?.[name], key);
     const L = index(local[name], key);
-    const R = index(remote[name], key);
+    // tabela que o Drive ainda não tem (enviado por uma versão antiga do app): conta como "não mudou lá"
+    const R = index(remote[name] ?? base?.[name], key);
     const out: Rec[] = [];
     for (const k of new Set([...L.keys(), ...R.keys(), ...B.keys()])) {
       const l = L.get(k), r = R.get(k), b = B.get(k);
@@ -74,6 +76,8 @@ export function mergeSnapshots(base: Snapshot | null, local: Snapshot, remote: S
       if (pick?.s !== r?.s) remoteChanged = true;
       if (pick) out.push(pick.rec);
     }
+    // o Drive não tinha a tabela: precisa receber o que existe aqui
+    if (remote[name] === undefined && out.length > 0) remoteChanged = true;
     merged[name] = out;
   }
   return { merged, localChanged, remoteChanged, conflicts };

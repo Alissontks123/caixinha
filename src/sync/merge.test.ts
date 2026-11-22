@@ -40,6 +40,16 @@ describe('mesclagem item a item', () => {
     expect(ids(r.merged)).toEqual(['a:1', 'b:2']);
   });
 
+  it('Drive salvo por uma versão antiga (sem a tabela de estrelas) não apaga as compras deste aparelho', () => {
+    const compras = [{ id: 'compra-avatar:panda', amount: 100, updatedAt: 1 }];
+    const base2 = snap([tx('a', 10)], { stars: compras });
+    const remoteAntigo = snap([tx('a', 10)]); // sem a chave "stars"
+    const r = mergeSnapshots(base2, base2, remoteAntigo);
+    expect(r.merged.stars).toEqual(compras);
+    expect(r.localChanged).toBe(false);
+    expect(r.remoteChanged).toBe(true); // reenvia a tabela para o Drive
+  });
+
   it('comparação ignora a ordem das chaves', () => {
     expect(stableStringify({ b: 1, a: { d: 2, c: [1, { f: 1, e: 2 }] } })).toBe(stableStringify({ a: { c: [1, { e: 2, f: 1 }], d: 2 }, b: 1 }));
   });

@@ -6,6 +6,7 @@ import type {
   CaixinhaMovement, Category, CategoryRuleVersion, FixedContributionVersion,
   KnownCard, LearnedRule, MonthClosing, Profile, Transaction,
 } from './domain/types';
+import type { StarRecord } from './domain/stars';
 
 export interface AppData {
   profile?: Profile;
@@ -17,6 +18,7 @@ export interface AppData {
   movements: CaixinhaMovement[];
   learnedRules: LearnedRule[];
   cards: KnownCard[];
+  stars: StarRecord[];
 }
 
 export type ReadyData = AppData & { profile: Profile };
@@ -33,6 +35,7 @@ export function useAppData(): AppData | undefined {
     movements: await db.caixinha.toArray(),
     learnedRules: await db.learnedRules.toArray(),
     cards: await db.cards.toArray(),
+    stars: await db.stars.toArray(),
   }), []);
 }
 

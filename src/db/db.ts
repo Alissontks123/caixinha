@@ -4,6 +4,7 @@ import type {
   CaixinhaMovement, Category, CategoryRuleVersion, FixedContributionVersion,
   KnownCard, LearnedRule, MonthClosing, Profile, Transaction,
 } from '../domain/types';
+import type { StarRecord } from '../domain/stars';
 
 /** Banco local do aparelho (IndexedDB). */
 export class AppDB extends Dexie {
@@ -16,6 +17,8 @@ export class AppDB extends Dexie {
   caixinha!: Table<CaixinhaMovement, string>;
   learnedRules!: Table<LearnedRule, string>;
   cards!: Table<KnownCard, string>;
+  /** Estrelas registradas: compras da loja e marcos da meta. */
+  stars!: Table<StarRecord, string>;
   declare meta: Table<{ id: string; [k: string]: unknown }, string>;
 
   constructor() {
@@ -53,6 +56,10 @@ export class AppDB extends Dexie {
         if (cats.some((c) => c.id === special.id)) await tx.table('categories').update(special.id, { color: special.color, updatedAt: now });
       }
     });
+    // loja de estrelas: compras e marcos da meta
+    this.version(6).stores({
+      stars: 'id, kind',
+    });
   }
 }
 
@@ -82,7 +89,7 @@ const notify = () => {
   if (!applyingSync) changeListeners.forEach((fn) => fn());
 };
 
-for (const name of ['profile', 'categories', 'categoryRules', 'fixedContributions', 'transactions', 'closings', 'caixinha', 'learnedRules', 'cards']) {
+for (const name of ['profile', 'categories', 'categoryRules', 'fixedContributions', 'transactions', 'closings', 'caixinha', 'learnedRules', 'cards', 'stars']) {
   const table = db.table(name);
   table.hook('creating', function (_pk, obj: { updatedAt?: number }) {
     if (!applyingSync || obj.updatedAt == null) obj.updatedAt = Date.now();
@@ -118,5 +125,5 @@ export const SPECIAL_CATEGORIES: Category[] = [
 export const CATEGORY_COLORS = SERIES_LIGHT;
 
 export const BACKUP_TABLES = [
-  'profile', 'categories', 'categoryRules', 'fixedContributions', 'transactions', 'closings', 'caixinha', 'learnedRules', 'cards',
+  'profile', 'categories', 'categoryRules', 'fixedContributions', 'transactions', 'closings', 'caixinha', 'learnedRules', 'cards', 'stars',
 ] as const;

@@ -4,15 +4,20 @@ import { HeroDecor, ThemeBackdrop } from '../components/ThemeEffects';
 import { ErrorBox, useAction } from '../components/ui';
 import { updateProfile } from '../db/repo';
 import type { Profile } from '../domain/types';
-import { DEFAULT_THEME, isUnlocked, themeById, THEMES, type Palette, type Theme } from '../lib/themes';
+import { DEFAULT_THEME, themeById, THEMES, type Palette, type Theme } from '../lib/themes';
+import { shopItem, themeOwned } from '../lib/shop';
+import { BuyDialog } from '../components/BuyDialog';
+import type { StarsState } from '../useStars';
 
-/** Ajustes › Temas: todos os temas, com prévia; os bloqueados virão da loja de pontos. */
-export function Themes({ profile, onBack }: { profile: Profile; onBack: () => void }) {
+/** Ajustes › Temas: todos os temas, com prévia; os que não são seus podem ser comprados com estrelas. */
+export function Themes({ profile, stars, onBack }: { profile: Profile; stars: StarsState; onBack: () => void }) {
   const current = themeById(profile.theme ?? DEFAULT_THEME);
   const [selected, setSelected] = useState<Theme>(current);
   const { error, run } = useAction();
   const inUse = selected.id === current.id;
-  const unlocked = isUnlocked(selected.id);
+  const unlocked = themeOwned(selected.id, stars.owned);
+  const forSale = shopItem(`tema:${selected.id}`);
+  const [buying, setBuying] = useState(false);
 
   return (
     <div className="stack">
@@ -24,8 +29,8 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
       <section className="card points-card">
         <span className="points-badge"><StarIcon size={22} /></span>
         <div>
-          <b>Loja de temas: em breve</b>
-          <p className="small muted">Você vai juntar pontos cuidando do seu mês e poderá trocá-los por novos temas.</p>
+          <b>Você tem {stars.balance} estrelas</b>
+          <p className="small muted">Ganhe estrelas cuidando do seu mês e troque por temas: comuns por 200, premium por 500. As regras estão na aba Loja.</p>
         </div>
       </section>
 
@@ -43,16 +48,17 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
         ) : unlocked ? (
           <button type="button" className="btn primary" onClick={() => run(() => updateProfile({ theme: selected.id }))}>Usar este tema</button>
         ) : (
-          <button type="button" className="btn locked" disabled><Icon d={ICONS.lock} size={18} width={2} /> Disponível na loja em breve</button>
+          <button type="button" className="btn primary" onClick={() => setBuying(true)}><StarIcon size={16} /> Comprar por {forSale?.price}</button>
         )}
         <ErrorBox error={error} />
+        {buying && forSale && <BuyDialog item={forSale} balance={stars.balance} onClose={() => setBuying(false)} />}
       </section>
 
       <h2 className="section-title">Todos os temas</h2>
       <div className="theme-grid">
         {THEMES.map((t) => {
           const isCurrent = t.id === current.id;
-          const status = isCurrent ? 'Em uso' : isUnlocked(t.id) ? 'Liberado' : 'Em breve na loja';
+          const status = isCurrent ? 'Em uso' : themeOwned(t.id, stars.owned) ? 'Seu' : `${shopItem(`tema:${t.id}`)?.price ?? ''} estrelas`;
           return (
             <button key={t.id} type="button" className={`theme-card ${t.id === selected.id ? 'selected' : ''}`}
               aria-pressed={t.id === selected.id} aria-label={`Ver prévia do tema ${t.name}, ${status}`} onClick={() => setSelected(t)}>
@@ -66,7 +72,7 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
                   <i style={{ background: t.light.primary }} /><i style={{ background: t.light.accent }} /><i style={{ background: t.dark.primary }} />
                 </span>
                 <span className={`theme-status ${isCurrent ? 'on' : ''}`}>
-                  <Icon d={isCurrent || isUnlocked(t.id) ? ICONS.check : ICONS.lock} size={13} width={2.2} />
+                  {isCurrent || themeOwned(t.id, stars.owned) ? <Icon d={ICONS.check} size={13} width={2.2} /> : <StarIcon size={12} />}
                   {isCurrent && t.id === DEFAULT_THEME ? 'Em uso · padrão' : status}
                 </span>
               </span>

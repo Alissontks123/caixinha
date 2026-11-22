@@ -3,6 +3,7 @@ import { recurringKey } from '../domain/insights';
 import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES, UNIDENTIFIED_ID, db } from './db';
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
+import type { StarRecord } from '../domain/stars';
 import type {
   AllocationPart, CaixinhaMovement, Category, Cents, ISODate, KnownCard, LearnedRule, Month, Profile, Transaction,
 } from '../domain/types';
@@ -63,6 +64,23 @@ const pickRule = (r: RuleValues): RuleValues =>
 
 export async function updateProfile(changes: Partial<Omit<Profile, 'id'>>) {
   await db.profile.update('me', changes);
+}
+
+// ---------- loja de estrelas ----------
+
+/** Compra um item da loja com estrelas. A conferência do saldo é feita aqui também (não só na tela). */
+export async function buyItem(item: { key: string; name: string; price: number }, balance: number) {
+  const id = `compra-${item.key}`;
+  if (await db.stars.get(id)) throw new Error(`${item.name} já é seu.`);
+  if (balance < item.price) throw new Error(`Faltam ${item.price - balance} estrelas para comprar ${item.name}.`);
+  await db.stars.put({ id, kind: 'compra', item: item.key, amount: item.price, date: todayISO(), label: `Comprou ${item.name}` });
+}
+
+/** Registra marcos da meta alcançados (cada um só uma vez). */
+export async function addStarRecords(records: StarRecord[]) {
+  const existing = new Set((await db.stars.bulkGet(records.map((r) => r.id))).filter(Boolean).map((r) => r!.id));
+  const fresh = records.filter((r) => !existing.has(r.id));
+  if (fresh.length) await db.stars.bulkPut(fresh);
 }
 
 // ---------- lançamentos ----------

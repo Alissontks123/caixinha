@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { createPortal } from 'react-dom';
 
 /** Abas do app (as mesmas de App.tsx). */
-export type TourTab = 'painel' | 'lancamentos' | 'importar' | 'caixinha' | 'historico' | 'ajustes';
+export type TourTab = 'painel' | 'lancamentos' | 'importar' | 'caixinha' | 'historico' | 'loja' | 'ajustes';
 
 interface Step {
   tab: TourTab;
@@ -49,7 +49,7 @@ const STEPS = (): Step[] => [
       ),
   },
   { tab: 'ajustes', target: 'sync', title: 'Conecte ao Google Drive', body: <p>Toque em <b>Conectar ao Google Drive</b> para guardar uma cópia dos dados e usar o app em mais de um aparelho. Se aparecer "O Google não verificou este app", toque em <b>Avançado → Acessar</b>.</p> },
-  { tab: 'painel', target: 'tabs', title: 'O menu', body: <p>As 6 abas ficam aqui embaixo, ao alcance do polegar: <b>Painel</b>, <b>Gastos</b>, <b>Importar</b>, <b>Caixinha</b>, <b>Histórico</b> e <b>Ajustes</b>.</p> },
+  { tab: 'painel', target: 'tabs', title: 'O menu', body: <p>As 7 abas ficam aqui embaixo, ao alcance do polegar: <b>Painel</b>, <b>Gastos</b>, <b>Importar</b>, <b>Caixinha</b>, <b>Histórico</b>, <b>Loja</b> e <b>Ajustes</b>.</p> },
   { tab: 'painel', target: 'month', title: 'Escolha o mês', body: <p>Use <b>‹</b> e <b>›</b> para ver outros meses. Nos meses futuros aparecem as parcelas que já vão cair na fatura.</p> },
   { tab: 'painel', target: 'hero', title: 'Quanto aportar no mês', body: <p>A soma do <b>aporte fixo</b>, dos <b>gastos excedentes</b> e do que ficou faltando de <b>meses anteriores</b>. Embaixo, quanto já foi aportado e quanto falta.</p> },
   { tab: 'painel', target: 'categories', title: 'Suas categorias', body: <p>Cada cartão mostra no anel quanto do limite já foi usado, o gasto, quanto ainda dá para gastar, a comparação com o mês anterior e a previsão até o fim do mês. Toque num cartão para ver os gastos dele.</p> },
@@ -59,9 +59,10 @@ const STEPS = (): Step[] => [
   { tab: 'caixinha', target: 'caixinha', title: 'A caixinha', body: <p>O saldo estimado, o que está pendente e o crédito. As aplicações dos extratos Nubank entram sozinhas e quitam primeiro o mês mais antigo.</p> },
   { tab: 'caixinha', target: 'goal', title: 'Meta', body: <p>Defina quanto quer juntar e até quando: o app mostra o progresso e quanto aportar por mês.</p> },
   { tab: 'historico', target: 'charts', title: 'Histórico', body: <p>Gráficos dos meses, as parcelas dos próximos meses e o botão para baixar o relatório em PDF ou Excel.</p> },
+  { tab: 'loja', target: 'store', title: 'Estrelas e Loja', body: <p>Cuidar do mês dá <b>estrelas</b>: categorias dentro do limite, aporte fixo pago, aporte extra e mais. Troque as estrelas por avatares e temas aqui na Loja.</p> },
   { tab: 'painel', target: 'close', title: 'Feche o mês', body: <p>Quando o mês acabar e tudo estiver classificado, feche o mês: os valores ficam congelados e o que faltar aportar passa para o mês seguinte.</p> },
   { tab: 'painel', target: 'sync-top', title: 'Sincronizar', body: <p>O <b>☁✓</b> mostra se está tudo sincronizado com o Google Drive. O botão <b>↻</b> sincroniza na hora (ou <b>☁</b> conecta, se ainda não estiver conectado).</p> },
-  { tab: 'painel', target: 'actions', title: 'Pontos, tour, modo e ajuda', body: <p>Toque no seu <b>avatar</b> (ao lado do Olá) para trocar de bichinho. <b>★</b> mostra seus pontos (em breve dão direito a novos temas). <b>▶</b> mostra este tour de novo. O botão de <b>sol/lua</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
+  { tab: 'painel', target: 'actions', title: 'Pontos, tour, modo e ajuda', body: <p>Toque no seu <b>avatar</b> (ao lado do Olá) para trocar de bichinho. <b>★</b> mostra suas estrelas e abre a Loja. <b>▶</b> mostra este tour de novo. O botão de <b>sol/lua</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
   { tab: 'painel', title: 'Pronto!', body: <p>Agora é com você. Para ver este tour de novo, toque em <b>▶</b> no topo.</p> },
 ];
 

@@ -15,6 +15,9 @@ import { History } from './screens/History';
 import { Import } from './screens/Import';
 import { Settings } from './screens/Settings';
 import { Themes } from './screens/Themes';
+import { Store } from './screens/Store';
+import { useStars } from './useStars';
+import { addStarRecords } from './db/repo';
 import { applyPalette, themeById } from './lib/themes';
 import { ThemeBackdrop } from './components/ThemeEffects';
 import { AvatarButton } from './components/Avatar';
@@ -22,7 +25,7 @@ import { Setup } from './screens/Setup';
 import { Transactions } from './screens/Transactions';
 import { useAppData, type ReadyData } from './useAppData';
 
-type Tab = 'painel' | 'lancamentos' | 'importar' | 'caixinha' | 'historico' | 'ajustes' | 'ajuda' | 'temas';
+type Tab = 'painel' | 'lancamentos' | 'importar' | 'caixinha' | 'historico' | 'loja' | 'ajustes' | 'ajuda' | 'temas';
 
 const TABS: { id: Exclude<Tab, 'ajuda' | 'temas'>; label: string; icon: string }[] = [
   { id: 'painel', label: 'Painel', icon: ICONS.painel },
@@ -30,10 +33,11 @@ const TABS: { id: Exclude<Tab, 'ajuda' | 'temas'>; label: string; icon: string }
   { id: 'importar', label: 'Importar', icon: ICONS.importar },
   { id: 'caixinha', label: 'Caixinha', icon: ICONS.caixinha },
   { id: 'historico', label: 'Histórico', icon: ICONS.historico },
+  { id: 'loja', label: 'Loja', icon: ICONS.loja },
   { id: 'ajustes', label: 'Ajustes', icon: ICONS.ajustes },
 ];
 /** Título grande do topo nas abas sem escolha de mês. */
-const TITLES: Partial<Record<Tab, string>> = { importar: 'Importar', caixinha: 'Caixinha', historico: 'Histórico', ajustes: 'Ajustes' };
+const TITLES: Partial<Record<Tab, string>> = { importar: 'Importar', caixinha: 'Caixinha', historico: 'Histórico', loja: 'Loja', ajustes: 'Ajustes' };
 
 export default function App() {
   const data = useAppData();
@@ -49,6 +53,10 @@ export default function App() {
   // tema escolhido no perfil (vem sincronizado do Drive)
   const themeId = data?.profile?.theme;
   useEffect(() => { if (data) applyPalette(themeId); }, [data, themeId]);
+  const stars = useStars(data?.profile ? (data as ReadyData) : undefined);
+  // marcos da meta alcançados ficam registrados (valem uma vez na vida)
+  const milestoneIds = stars?.milestones.map((m) => m.id).join(',') ?? '';
+  useEffect(() => { if (stars?.milestones.length) void addStarRecords(stars.milestones); }, [milestoneIds]); // eslint-disable-line react-hooks/exhaustive-deps
   // tour: abre sozinho uma vez (logo depois de configurar, ou na primeira vez nesta versão)
   useEffect(() => { if (hasProfile && !tourSeen()) setTouring(true); }, [hasProfile]);
 
@@ -80,14 +88,14 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand" data-tour="sync-top">
-            <AvatarButton current={d.profile.avatar} />
+            <AvatarButton current={d.profile.avatar} stars={stars!} />
             <span className="brand-text">
               <span className="greet">Olá, {d.profile.name}!</span>
               <span className="brand-sync"><SyncBadge onClick={() => go('ajustes')} /><SyncButton /></span>
             </span>
           </span>
           <div className="topbar-actions" data-tour="actions">
-            <PointsButton />
+            <PointsButton balance={stars?.balance ?? 0} onClick={() => go('loja')} />
             <button type="button" className="help-btn" aria-label="Ver o tour do app" title="Ver o tour do app"
               onClick={() => { setMonth(currentMonth()); setTouring(true); }}><Icon d={ICONS.play} size={15} width={2} /></button>
             <ThemeButton />
@@ -118,7 +126,8 @@ export default function App() {
         {tab === 'caixinha' && <Caixinha data={d} />}
         {tab === 'historico' && <History data={d} />}
         {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} onThemes={() => go('temas')} />}
-        {tab === 'temas' && <Themes profile={d.profile} onBack={() => go('ajustes')} />}
+        {tab === 'temas' && <Themes profile={d.profile} stars={stars!} onBack={() => go('ajustes')} />}
+        {tab === 'loja' && <Store profile={d.profile} stars={stars!} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
       <SyncChoiceModal />
