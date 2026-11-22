@@ -61,7 +61,7 @@ const STEPS = (): Step[] => [
   { tab: 'historico', target: 'charts', title: 'Histórico', body: <p>Gráficos dos meses, as parcelas dos próximos meses e o botão para baixar o relatório em PDF ou Excel.</p> },
   { tab: 'painel', target: 'close', title: 'Feche o mês', body: <p>Quando o mês acabar e tudo estiver classificado, feche o mês: os valores ficam congelados e o que faltar aportar passa para o mês seguinte.</p> },
   { tab: 'painel', target: 'sync-top', title: 'Sincronizar', body: <p>O <b>☁✓</b> mostra se está tudo sincronizado com o Google Drive. O botão <b>↻</b> sincroniza na hora (ou <b>☁</b> conecta, se ainda não estiver conectado).</p> },
-  { tab: 'painel', target: 'actions', title: 'Pontos, tour, modo e ajuda', body: <p><b>★</b> mostra seus pontos (em breve dão direito a novos temas). <b>▶</b> mostra este tour de novo. O botão de <b>sol/lua</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
+  { tab: 'painel', target: 'actions', title: 'Pontos, tour, modo e ajuda', body: <p>Toque no seu <b>avatar</b> (ao lado do Olá) para trocar de bichinho. <b>★</b> mostra seus pontos (em breve dão direito a novos temas). <b>▶</b> mostra este tour de novo. O botão de <b>sol/lua</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
   { tab: 'painel', title: 'Pronto!', body: <p>Agora é com você. Para ver este tour de novo, toque em <b>▶</b> no topo.</p> },
 ];
 

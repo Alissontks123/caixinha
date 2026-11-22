@@ -166,4 +166,6 @@ export interface Profile {
   c6Password?: string;
   /** Tema (paleta de cores) escolhido; vale em todos os aparelhos. Sem ele, o padrão. */
   theme?: string;
+  /** Avatar escolhido (bichinho); vale em todos os aparelhos. Sem ele, o Pintinho. */
+  avatar?: string;
 }

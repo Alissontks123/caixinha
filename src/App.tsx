@@ -17,6 +17,7 @@ import { Settings } from './screens/Settings';
 import { Themes } from './screens/Themes';
 import { applyPalette, themeById } from './lib/themes';
 import { ThemeBackdrop } from './components/ThemeEffects';
+import { AvatarButton } from './components/Avatar';
 import { Setup } from './screens/Setup';
 import { Transactions } from './screens/Transactions';
 import { useAppData, type ReadyData } from './useAppData';
@@ -79,8 +80,11 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand" data-tour="sync-top">
-            <span className="greet">Olá, {d.profile.name}!</span>
-            <SyncBadge onClick={() => go('ajustes')} /><SyncButton />
+            <AvatarButton current={d.profile.avatar} />
+            <span className="brand-text">
+              <span className="greet">Olá, {d.profile.name}!</span>
+              <span className="brand-sync"><SyncBadge onClick={() => go('ajustes')} /><SyncButton /></span>
+            </span>
           </span>
           <div className="topbar-actions" data-tour="actions">
             <PointsButton />
