@@ -15,7 +15,8 @@ import { History } from './screens/History';
 import { Import } from './screens/Import';
 import { Settings } from './screens/Settings';
 import { Themes } from './screens/Themes';
-import { applyPalette } from './lib/themes';
+import { applyPalette, themeById } from './lib/themes';
+import { ThemeBackdrop } from './components/ThemeEffects';
 import { Setup } from './screens/Setup';
 import { Transactions } from './screens/Transactions';
 import { useAppData, type ReadyData } from './useAppData';
@@ -74,6 +75,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <ThemeBackdrop effect={themeById(d.profile.theme).effect} />
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand" data-tour="sync-top">

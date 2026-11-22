@@ -63,7 +63,7 @@ export function Settings({ data, onHelp, onThemes }: { data: Data; onHelp: () =>
           <span className="theme-row-icon"><Icon d={themeById(data.profile.theme ?? DEFAULT_THEME).motif} size={24} /></span>
           <span className="theme-row-text">
             <b>Tema {themeById(data.profile.theme ?? DEFAULT_THEME).name}</b>
-            <span className="small muted">Veja os 10 temas. Novos temas virão da loja de pontos.</span>
+            <span className="small muted">Veja os 13 temas (3 premium, com animação). Novos temas virão da loja de pontos.</span>
           </span>
           <Icon d={ICONS.right} size={18} width={2} />
         </button>

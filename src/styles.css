@@ -773,3 +773,106 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .theme-dots i { width: 14px; height: 14px; border-radius: 50%; }
 .theme-status { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--muted); }
 .theme-status.on { color: var(--primary); }
+
+/* ================= temas premium (animações) ================= */
+.premium-badge {
+  display: inline-block; margin-left: 8px; vertical-align: 2px; padding: 2px 8px; border-radius: 99px;
+  font-family: system-ui, sans-serif; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--primary); color: var(--primary-ink);
+}
+.fx-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.fx-layer.fx-contained { position: absolute; border-radius: inherit; }
+.app > .content { position: relative; z-index: 1; }
+.preview-side { position: relative; overflow: hidden; }
+.preview-side > :not(.fx-layer) { position: relative; z-index: 1; }
+
+/* sakura: pétalas (claro) e vaga-lumes (escuro) */
+.fx-petal { position: absolute; top: -24px; opacity: 0.75; animation: fxFall linear infinite; }
+.fx-petal i {
+  display: block; width: 100%; height: 100%; border-radius: 100% 0 100% 0;
+  background: linear-gradient(135deg, #ffd3e0, #f59ab6); animation: fxFlip 2.6s ease-in-out infinite;
+}
+@keyframes fxFall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.8; }
+  30% { transform: translate(28px, 30vh) rotate(140deg); }
+  60% { transform: translate(-18px, 62vh) rotate(290deg); }
+  92% { opacity: 0.8; }
+  100% { transform: translate(22px, 105vh) rotate(420deg); opacity: 0; }
+}
+@keyframes fxFlip { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(70deg); } }
+.fx-firefly {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #f7d77a;
+  box-shadow: 0 0 8px 3px rgba(247, 215, 122, 0.55); animation: fxDrift ease-in-out infinite alternate, fxBlink ease-in-out infinite;
+}
+@keyframes fxDrift { from { transform: translate(0, 0); } to { transform: translate(34px, -46px); } }
+@keyframes fxBlink { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.9; } }
+.fx-branch { position: absolute; right: -14px; bottom: -14px; scale: 1 -1; color: var(--primary-ink); transform-origin: top right; animation: fxSway 6s ease-in-out infinite; }
+@keyframes fxSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.fx-petal-hero { top: -12px; animation-name: fxFallHero; }
+@keyframes fxFallHero { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: 0.9; } 100% { transform: translate(-30px, 260px) rotate(360deg); opacity: 0; } }
+
+/* aquário: bolhas, raios de luz, peixinho e ondas */
+.fx-bubble {
+  position: absolute; bottom: -24px; border-radius: 50%; opacity: 0.6;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 45%, white);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: fxRise linear infinite;
+}
+@keyframes fxRise {
+  0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 0.6; }
+  50% { transform: translate(12px, -55vh); } 100% { transform: translate(-8px, -112vh); opacity: 0; }
+}
+.fx-ray {
+  position: absolute; top: -40px; height: 70vh; opacity: 0.35;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent); animation: fxRays 10s ease-in-out infinite;
+}
+@keyframes fxRays { 0%, 100% { opacity: 0.25; transform: skewX(-14deg); } 50% { opacity: 0.5; transform: skewX(-8deg) translateX(30px); } }
+.fx-fish { position: absolute; left: 0; bottom: 22px; animation: fxSwim 14s linear infinite; }
+.hero-wrap-aquario .hero { padding-bottom: 64px; }
+.fx-fish-tail { transform-origin: 14px 16px; animation: fxTail 0.5s ease-in-out infinite; }
+@keyframes fxSwim {
+  0% { transform: translateX(-90px) translateY(0); } 25% { transform: translateX(25vw) translateY(-8px); }
+  50% { transform: translateX(50vw) translateY(4px); } 75% { transform: translateX(75vw) translateY(-6px); }
+  100% { transform: translateX(min(110vw, 800px)) translateY(0); }
+}
+@keyframes fxTail { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.6); } }
+.fx-waves {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background-image: radial-gradient(circle at 15px -6px, transparent 14px, rgba(255, 255, 255, 0.22) 15px);
+  background-size: 30px 22px; animation: fxWave 6s linear infinite;
+}
+@keyframes fxWave { from { background-position: 0 0; } to { background-position: 120px 0; } }
+
+/* soneca: nuvens, estrelas, lua e o gatinho dormindo */
+.fx-cloud { position: absolute; left: 0; border-radius: 99px; background: #ffffff; opacity: 0.6; animation: fxCloud linear infinite; }
+.fx-dark .fx-cloud { background: #8f8bc4; opacity: 0.12; }
+@keyframes fxCloud { from { transform: translateX(-130px); } to { transform: translateX(110vw); } }
+.fx-star { position: absolute; border-radius: 50%; background: #ffffff; animation: fxBlink ease-in-out infinite; }
+.fx-twinkle { position: absolute; color: #ffe9a8; animation: fxBlink ease-in-out infinite; }
+.hero-fx-soneca .fx-moon { position: absolute; right: 22px; bottom: 18px; opacity: 0.9; }
+.hero-wrap-soneca { position: relative; margin-top: 44px; }
+.sleeping-cat { position: absolute; z-index: 2; left: 28px; top: -50px; width: 130px; height: 56px; pointer-events: none; }
+.sleeping-cat svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.fx-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: fxBreathe 3.6s ease-in-out infinite; }
+@keyframes fxBreathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, 1.07); } }
+.fx-tail-tip { transform-box: fill-box; transform-origin: 0% 50%; animation: fxTip 5s ease-in-out infinite; }
+@keyframes fxTip { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-22deg); } 86% { transform: rotate(6deg); } }
+.fx-z { position: absolute; font-family: var(--font-display); font-weight: 800; color: var(--primary); animation: fxZ 3.6s ease-out infinite; }
+@keyframes fxZ { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(26px, -58px) scale(1.25); } }
+
+/* enfeite dentro do cartão do mês: fica atrás do texto */
+.hero-fx { position: absolute !important; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.hero-fx ~ * { position: relative; z-index: 1; }
+/* na prévia em miniatura, o enfeite fica menor */
+.preview-hero .hero-fx > svg, .preview-hero .fx-fish { transform-origin: top right; scale: 0.45; }
+.preview-hero .fx-fish { bottom: 2px; transform-origin: left bottom; }
+.preview-hero .hero-fx-soneca .fx-moon { right: 4px; bottom: 4px; }
+.preview-hero > :not(.hero-fx) { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-layer, .hero-fx .fx-petal-hero, .fx-fish, .fx-z { display: none; }
+}
+.preview-hero:has(.hero-fx-aquario) { padding-bottom: 24px; }
+.preview-hero .fx-waves { height: 10px; background-image: radial-gradient(circle at 7px -3px, transparent 6px, rgba(255, 255, 255, 0.22) 7px); background-size: 14px 10px; }
+.preview-hero .fx-fish { bottom: -2px; }

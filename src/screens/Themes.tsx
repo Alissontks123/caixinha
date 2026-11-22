@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Icon, ICONS, StarIcon } from '../components/icons';
+import { HeroDecor, ThemeBackdrop } from '../components/ThemeEffects';
 import { ErrorBox, useAction } from '../components/ui';
 import { updateProfile } from '../db/repo';
 import type { Profile } from '../domain/types';
@@ -30,12 +31,12 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
 
       <section className="card stack-sm" aria-label={`Prévia do tema ${selected.name}`}>
         <div className="row-between">
-          <h2>{selected.name}</h2>
+          <h2>{selected.name}{selected.premium && <span className="premium-badge">Premium</span>}</h2>
           <span className="small muted">{selected.tagline}</span>
         </div>
         <div className="grid-2 theme-preview">
-          <PreviewSide theme={selected} palette={selected.light} label="Claro" />
-          <PreviewSide theme={selected} palette={selected.dark} label="Escuro" />
+          <PreviewSide key={`${selected.id}-c`} theme={selected} palette={selected.light} label="Claro" />
+          <PreviewSide key={`${selected.id}-e`} theme={selected} palette={selected.dark} label="Escuro" dark />
         </div>
         {inUse ? (
           <button type="button" className="btn soft" disabled><Icon d={ICONS.check} size={18} width={2.2} /> Em uso</button>
@@ -60,7 +61,7 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
                 <span style={{ background: t.dark.hero, color: t.dark.primary }}><Icon d={t.motif} size={34} width={1.7} /></span>
               </span>
               <span className="theme-info">
-                <b>{t.name}</b>
+                <b>{t.name}{t.premium && <span className="premium-badge">Premium</span>}</b>
                 <span className="theme-dots" aria-hidden="true">
                   <i style={{ background: t.light.primary }} /><i style={{ background: t.light.accent }} /><i style={{ background: t.dark.primary }} />
                 </span>
@@ -78,12 +79,13 @@ export function Themes({ profile, onBack }: { profile: Profile; onBack: () => vo
 }
 
 /** Miniatura do Painel nas cores do tema (claro ou escuro). */
-function PreviewSide({ theme, palette: p, label }: { theme: Theme; palette: Palette; label: string }) {
+function PreviewSide({ theme, palette: p, label, dark }: { theme: Theme; palette: Palette; label: string; dark?: boolean }) {
   return (
     <div className="preview-side" style={{ background: p.bg, color: p.text, borderColor: p.border }}>
+      <ThemeBackdrop effect={theme.effect} contained dark={!!dark} />
       <span className="small" style={{ color: p.muted }}>{label}</span>
       <div className="preview-hero" style={{ background: p.primary, color: p.ink, borderRadius: Math.round(theme.radius * 0.6) }}>
-        <span className="preview-motif"><Icon d={theme.motif} size={52} width={1.2} /></span>
+        {theme.effect ? <HeroDecor effect={theme.effect} /> : <span className="preview-motif"><Icon d={theme.motif} size={52} width={1.2} /></span>}
         <span className="preview-label">Aportes do mês</span>
         <b>R$ 440,00</b>
       </div>

@@ -13,6 +13,7 @@ import { changeVsPrevious, forecastMonth, futureInstallments, recurringStatus } 
 import { summaryInput, type AppData } from '../useAppData';
 import { Icon, ICONS } from '../components/icons';
 import { DEFAULT_THEME, themeById } from '../lib/themes';
+import { HeroDecor, SleepingCat } from '../components/ThemeEffects';
 
 interface Props {
   data: AppData & { profile: Profile };
@@ -93,7 +94,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
   const threshold = data.profile.alertThreshold / 100;
   const { error, run } = useAction();
   const unidentifiedId = data.categories.find((c) => c.kind === 'unidentified')?.id;
-  const motif = themeById(data.profile.theme ?? DEFAULT_THEME).motif;
+  const theme = themeById(data.profile.theme ?? DEFAULT_THEME);
   const withLimit = summary.categories.filter((c) => c.contributes !== false);
   const withinLimit = withLimit.filter((c) => c.spent <= c.limit).length;
 
@@ -169,8 +170,10 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
       )}
 
       {!beforeStart && (
+        <div className={`hero-wrap ${theme.effect ? `hero-wrap-${theme.effect}` : ''}`}>
+        {theme.effect === 'soneca' && <SleepingCat />}
         <section className="hero" data-tour="hero">
-          <span className="hero-motif"><Icon d={motif} size={180} width={1} /></span>
+          {theme.effect ? <HeroDecor effect={theme.effect} /> : <span className="hero-motif"><Icon d={theme.motif} size={180} width={1} /></span>}
           <div className="hero-top">
             <p className="hero-label">Aportes necessários no mês</p>
             <span className="hero-badge">{summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}</span>
@@ -204,6 +207,7 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
             </>
           )}
         </section>
+        </div>
       )}
 
       {summary.unidentifiedCount > 0 && (

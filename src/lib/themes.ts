@@ -30,7 +30,12 @@ export interface Theme {
   radius: number;
   light: Palette;
   dark: Palette;
+  /** Tema premium: tem animação contínua (fundo leve em todas as telas e destaque no cartão do mês). */
+  premium?: boolean;
+  effect?: ThemeEffect;
 }
+
+export type ThemeEffect = 'sakura' | 'aquario' | 'soneca';
 
 export const DEFAULT_THEME = 'lavanda';
 
@@ -97,6 +102,25 @@ export const THEMES: Theme[] = [
     motif: 'M12 20 4 10a8 8 0 0 1 16 0z M12 20V7 M12 20 7.5 8.5 M12 20l4.5-11.5',
     light: { bg: '#f8f6f2', surface: '#ffffff', surface2: '#f0ece5', text: '#2f2b26', muted: '#6e675e', border: '#e6e0d6', primary: '#7a6247', ink: '#ffffff', soft: '#efe7dc', hero: '#f1ebe2', accent: '#d9e2d6' },
     dark: { bg: '#171614', surface: '#201e1b', surface2: '#2a2723', text: '#eeeae4', muted: '#b2aba1', border: '#33302b', primary: '#d9c0a0', ink: '#261c10', soft: '#352e25', hero: '#2a2620', accent: '#2c3429' },
+  },
+  // ---------- premium (com animação) ----------
+  {
+    id: 'sakura', name: 'Sakura', tagline: 'Pétalas caindo; à noite, vaga-lumes', radius: 24, premium: true, effect: 'sakura',
+    motif: 'M12 10c-1.5-3-1-6 0-7 1 1 1.5 4 0 7z M13.9 11.4c2.5-2.2 5.5-2.7 6.7-2.1-.4 1.3-3.2 2.8-6.7 2.1z M13.2 13.6c1.4 3 1.2 6-.1 6.9-.9-.9-1.3-4 .1-6.9z M10.8 13.6c-1.4 3-1.2 6 .1 6.9.9-.9 1.3-4-.1-6.9z M10.1 11.4C7.6 9.2 4.6 8.7 3.4 9.3c.4 1.3 3.2 2.8 6.7 2.1z',
+    light: { bg: '#fff7f9', surface: '#ffffff', surface2: '#fbeef2', text: '#3a2430', muted: '#75525f', border: '#f5dde5', primary: '#a8476a', ink: '#ffffff', soft: '#fbe3eb', hero: '#fdebf0', accent: '#f59ab6' },
+    dark: { bg: '#1b1420', surface: '#251c2b', surface2: '#2f2436', text: '#f6e9f0', muted: '#c3a9b9', border: '#3a2c40', primary: '#f4a9c4', ink: '#2c1220', soft: '#3b2536', hero: '#2a1f30', accent: '#f7d77a' },
+  },
+  {
+    id: 'aquario', name: 'Aquário', tagline: 'Bolhas e um peixinho nadando', radius: 22, premium: true, effect: 'aquario',
+    motif: 'M3 12c3-4 8-5 12-3l4-3v12l-4-3c-4 2-9 1-12-3z M8 11h.01',
+    light: { bg: '#eef9fc', surface: '#ffffff', surface2: '#e2f3f8', text: '#12384a', muted: '#456676', border: '#d3ebf2', primary: '#1f6f8f', ink: '#ffffff', soft: '#d9eff7', hero: '#def2f8', accent: '#bfe9f5' },
+    dark: { bg: '#0b1d26', surface: '#112836', surface2: '#183444', text: '#e2f4fa', muted: '#9cc0cf', border: '#1f3d4e', primary: '#7fd3ee', ink: '#062433', soft: '#173a4b', hero: '#0f3040', accent: '#2c6f86' },
+  },
+  {
+    id: 'soneca', name: 'Soneca', tagline: 'Um gatinho dormindo no seu mês', radius: 24, premium: true, effect: 'soneca',
+    motif: 'M4 18c0-5 4-9 9-9s8 3 8 7v2z M5 12l-1-4 3 2 M10 10.5l1-3.5 1.5 3 M7.5 14.5q1 1 2 0',
+    light: { bg: '#f3f0fb', surface: '#ffffff', surface2: '#ece8f8', text: '#26234a', muted: '#5c5880', border: '#e2ddf4', primary: '#4a4592', ink: '#ffffff', soft: '#e2def7', hero: '#e8e4f8', accent: '#f2b37c' },
+    dark: { bg: '#12112a', surface: '#1b1a3a', surface2: '#232248', text: '#ecebfb', muted: '#a9a6d0', border: '#2b2a55', primary: '#b3adf5', ink: '#1a1740', soft: '#29275a', hero: '#201f48', accent: '#f2b37c' },
   },
 ];
 

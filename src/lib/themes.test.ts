@@ -12,10 +12,13 @@ const contrast = (a: string, b: string) => {
 };
 
 describe('temas', () => {
-  it('são 10, com nomes e ids diferentes, e o padrão é o primeiro', () => {
-    expect(THEMES).toHaveLength(10);
-    expect(new Set(THEMES.map((t) => t.id)).size).toBe(10);
-    expect(new Set(THEMES.map((t) => t.name)).size).toBe(10);
+  it('são 10 comuns + 3 premium, com nomes e ids diferentes, e o padrão é o primeiro', () => {
+    expect(THEMES).toHaveLength(13);
+    expect(THEMES.filter((t) => !t.premium)).toHaveLength(10);
+    expect(THEMES.filter((t) => t.premium).map((t) => t.id)).toEqual(['sakura', 'aquario', 'soneca']);
+    expect(THEMES.filter((t) => t.premium).every((t) => t.effect === t.id)).toBe(true);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(13);
+    expect(new Set(THEMES.map((t) => t.name)).size).toBe(13);
     expect(THEMES[0].id).toBe(DEFAULT_THEME);
   });
 
