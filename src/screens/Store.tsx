@@ -87,13 +87,13 @@ export function Store({ profile, stars }: { profile: Profile; stars: StarsState 
       <section className="card stack-sm">
         <h2 className="card-title">Como ganhar estrelas</h2>
         <ul className="rules-list">
+          <li><b>+{STAR_RULES.organizado}</b> por mês fechado até o dia {STAR_RULES.organizadoDia} do mês seguinte (o mês só fecha com tudo classificado).</li>
           <li><b>+{STAR_RULES.categoria}</b> por categoria com limite que fechar o mês sem gerar aporte (sem passar do limite).</li>
           <li><b>+{STAR_RULES.fixo}</b> quando o aporte fixo do mês estiver todo aplicado na caixinha.</li>
+          <li><b>+{STAR_RULES.meta}</b> quando a caixinha chega a 25%, 50%, 75% e 100% da sua meta (cada marco vale uma vez só).</li>
           <li><b>+{STAR_RULES.extra}</b> uma vez por mês, se você aplicar além do devido pelo menos {STAR_RULES.extraPct * 100}% do aporte fixo
             (o devido é o fixo, os aportes por gastos excedentes, os resgates e o que faltou de meses anteriores).</li>
-          <li><b>+{STAR_RULES.organizado}</b> por mês fechado até o dia {STAR_RULES.organizadoDia} do mês seguinte (o mês só fecha com tudo classificado).</li>
           <li><b>+{STAR_RULES.sequencia}</b> a cada {STAR_RULES.sequenciaMeses} meses fechados seguidos sem nenhuma categoria passar do limite.</li>
-          <li><b>+{STAR_RULES.meta}</b> quando a caixinha chega a 25%, 50%, 75% e 100% da sua meta (cada marco vale uma vez só).</li>
         </ul>
         <p className="small muted">As estrelas são recalculadas com os seus dados: se um mês for reaberto e mudar, elas acompanham. Os meses desde o início da caixinha contam.</p>
       </section>
@@ -101,8 +101,10 @@ export function Store({ profile, stars }: { profile: Profile; stars: StarsState 
       <section className="card stack-sm">
         <h2 className="card-title">Como usar</h2>
         <ul className="rules-list">
-          <li>Avatar da loja: <b>{STAR_PRICES.avatarLoja}</b> estrelas · avatar premium (animado): <b>{STAR_PRICES.avatarPremium}</b></li>
-          <li>Tema: <b>{STAR_PRICES.temaComum}</b> estrelas · tema premium (animado): <b>{STAR_PRICES.temaPremium}</b></li>
+          <li>Avatar: <b>{STAR_PRICES.avatarLoja}</b> estrelas</li>
+          <li>Tema: <b>{STAR_PRICES.temaComum}</b> estrelas</li>
+          <li>Avatar premium (animado): <b>{STAR_PRICES.avatarPremium}</b> estrelas</li>
+          <li>Tema premium (animado): <b>{STAR_PRICES.temaPremium}</b> estrelas</li>
         </ul>
         <p className="small muted">O que você compra é seu para sempre e vale em todos os aparelhos conectados ao seu Google Drive.</p>
       </section>
