@@ -82,5 +82,6 @@ function monthForecast(data: ReadyData, input: StarsInput, entries: StarEntry[])
       lines.push({ label: `Chegar a ${formatMoney(target)} na caixinha (${next}% da meta; faltam ${formatMoney(Math.max(target - balance, 0))})`, amount: STAR_RULES.meta, done: false });
     }
   }
-  return lines;
+  // do menor para o maior número de estrelas
+  return lines.sort((a, b) => a.amount - b.amount);
 }
