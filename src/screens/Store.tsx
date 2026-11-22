@@ -14,7 +14,7 @@ import type { StarsState } from '../useStars';
 type Section = 'avatar' | 'tema';
 
 /** Aba Loja: saldo de estrelas, como ganhar e usar, itens à venda e extrato. */
-export function Store({ profile, stars }: { profile: Profile; stars: StarsState }) {
+export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; stars: StarsState; onPreviewTheme: (id: string) => void }) {
   const [section, setSection] = useState<Section>('avatar');
   const [buying, setBuying] = useState<ShopItem | null>(null);
   const { error, run } = useAction();
@@ -63,8 +63,18 @@ export function Store({ profile, stars }: { profile: Profile; stars: StarsState 
             const owned = stars.owned.has(i.key);
             return (
               <div key={i.key} className={`shop-item ${owned ? 'owned' : ''}`}>
-                <ItemPreview item={i} size={64} />
-                <b className="shop-name">{i.name}</b>
+                {i.kind === 'tema' ? (
+                  <button type="button" className="shop-preview-btn" onClick={() => onPreviewTheme(i.id)} aria-label={`Ver o Painel com o tema ${i.name}`}>
+                    <ItemPreview item={i} size={64} />
+                    <b className="shop-name">{i.name}</b>
+                    <span className="shop-hint">Ver no Painel</span>
+                  </button>
+                ) : (
+                  <>
+                    <ItemPreview item={i} size={64} />
+                    <b className="shop-name">{i.name}</b>
+                  </>
+                )}
                 {i.premium && <span className="premium-badge">Premium</span>}
                 {owned ? (
                   inUse(i)

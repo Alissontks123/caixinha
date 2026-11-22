@@ -18,7 +18,9 @@ import { Themes } from './screens/Themes';
 import { Store } from './screens/Store';
 import { useStars } from './useStars';
 import { addStarRecords } from './db/repo';
-import { applyPalette, themeById } from './lib/themes';
+import { applyPalette, themeById, updateThemeColor } from './lib/themes';
+import { useIsDark } from './lib/theme';
+import { ThemePreviewBar } from './components/ThemePreview';
 import { ThemeBackdrop } from './components/ThemeEffects';
 import { AvatarButton } from './components/Avatar';
 import { Setup } from './screens/Setup';
@@ -52,7 +54,23 @@ export default function App() {
   const hasProfile = !!data?.profile;
   // tema escolhido no perfil (vem sincronizado do Drive)
   const themeId = data?.profile?.theme;
-  useEffect(() => { if (data) applyPalette(themeId); }, [data, themeId]);
+  // prévia de um tema no Painel (aberta pela Loja): aplica as cores só enquanto está aberta
+  const [preview, setPreview] = useState<{ id: string; dark: boolean } | null>(null);
+  const systemDark = useIsDark();
+  useEffect(() => { if (data && !preview) applyPalette(themeId); }, [data, themeId, preview]);
+  useEffect(() => {
+    if (!preview) return;
+    const root = document.documentElement;
+    const before = root.getAttribute('data-theme');
+    applyPalette(preview.id, false);
+    root.setAttribute('data-theme', preview.dark ? 'dark' : 'light');
+    updateThemeColor();
+    window.scrollTo(0, 0);
+    return () => {
+      if (before) root.setAttribute('data-theme', before); else root.removeAttribute('data-theme');
+      updateThemeColor();
+    };
+  }, [preview]);
   const stars = useStars(data?.profile ? (data as ReadyData) : undefined);
   // marcos da meta alcançados ficam registrados (valem uma vez na vida)
   const milestoneIds = stars?.milestones.map((m) => m.id).join(',') ?? '';
@@ -76,6 +94,24 @@ export default function App() {
     if (m) setMonth(m);
     go('lancamentos');
   };
+
+  if (preview) {
+    // o Painel de verdade com o tema da prévia; só para olhar (nada responde ao toque)
+    const pd = { ...d, profile: { ...d.profile, theme: preview.id } };
+    return (
+      <div className="app preview-mode">
+        <ThemeBackdrop effect={themeById(preview.id).effect} dark={preview.dark} />
+        <ThemePreviewBar themeId={preview.id} dark={preview.dark} profile={d.profile} stars={stars!}
+          onToggleDark={() => setPreview({ ...preview, dark: !preview.dark })} onClose={() => setPreview(null)} />
+        <main className="content preview-content">
+          <div ref={(el) => el?.setAttribute('inert', '')}>
+            <Dashboard data={pd} month={currentMonth()} setMonth={() => undefined} goToTransactions={() => undefined}
+              goToCaixinha={() => undefined} goToSettings={() => undefined} />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // "Ajuda" e "Temas" ficam dentro de Ajustes: o menu continua marcando Ajustes
   const navTab = tab === 'ajuda' || tab === 'temas' ? 'ajustes' : tab;
@@ -127,7 +163,7 @@ export default function App() {
         {tab === 'historico' && <History data={d} />}
         {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} onThemes={() => go('temas')} />}
         {tab === 'temas' && <Themes profile={d.profile} stars={stars!} onBack={() => go('ajustes')} />}
-        {tab === 'loja' && <Store profile={d.profile} stars={stars!} />}
+        {tab === 'loja' && <Store profile={d.profile} stars={stars!} onPreviewTheme={(id) => setPreview({ id, dark: systemDark })} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
       <SyncChoiceModal />

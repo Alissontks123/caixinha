@@ -158,8 +158,8 @@ export function cachedThemeId(): string | undefined {
   try { return localStorage.getItem(CACHE_KEY) ?? undefined; } catch { return undefined; }
 }
 
-/** Aplica o tema na página: troca as cores e a cor da barra do navegador. */
-export function applyPalette(id: string | undefined) {
+/** Aplica o tema na página: troca as cores e a cor da barra do navegador. `remember: false` = só uma prévia. */
+export function applyPalette(id: string | undefined, remember = true) {
   const t = themeById(id);
   let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
   if (!el) {
@@ -171,7 +171,9 @@ export function applyPalette(id: string | undefined) {
   if (el.textContent !== css) el.textContent = css;
   document.documentElement.dataset.palette = t.id;
   updateThemeColor();
-  try { localStorage.setItem(CACHE_KEY, t.id); } catch { /* sem armazenamento */ }
+  if (remember) {
+    try { localStorage.setItem(CACHE_KEY, t.id); } catch { /* sem armazenamento */ }
+  }
 }
 
 /** A barra do navegador/celular acompanha o fundo do tema (claro ou escuro). */
