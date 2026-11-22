@@ -12,11 +12,13 @@ import type { Category, CategoryRuleVersion, Month, Profile } from '../domain/ty
 import { centsToInput, formatMoney, parseMoney } from '../lib/money';
 import { addMonths, currentMonth, lastDay, monthLabel, todayISO } from '../lib/months';
 import { startMonthOf } from '../domain/ledger';
+import { Icon, ICONS } from '../components/icons';
+import { DEFAULT_THEME, themeById } from '../lib/themes';
 import type { AppData } from '../useAppData';
 
 type Data = AppData & { profile: Profile };
 
-export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
+export function Settings({ data, onHelp, onThemes }: { data: Data; onHelp: () => void; onThemes: () => void }) {
   const [editingCat, setEditingCat] = useState<Category | 'new' | null>(null);
   const [editingFixed, setEditingFixed] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -53,6 +55,19 @@ export function Settings({ data, onHelp }: { data: Data; onHelp: () => void }) {
           <dt>Nome</dt><dd>{data.profile.name}</dd>
           <dt>Alerta de limite</dt><dd>a partir de {data.profile.alertThreshold}% do limite</dd>
         </dl>
+      </section>
+
+      <section className="card stack-sm">
+        <h2>Aparência</h2>
+        <button type="button" className="theme-row" onClick={onThemes}>
+          <span className="theme-row-icon"><Icon d={themeById(data.profile.theme ?? DEFAULT_THEME).motif} size={24} /></span>
+          <span className="theme-row-text">
+            <b>Tema {themeById(data.profile.theme ?? DEFAULT_THEME).name}</b>
+            <span className="small muted">Veja os 10 temas. Novos temas virão da loja de pontos.</span>
+          </span>
+          <Icon d={ICONS.right} size={18} width={2} />
+        </button>
+        <p className="muted small">O claro e o escuro seguem o aparelho; para trocar, use o botão de sol/lua no topo.</p>
       </section>
 
       <section className="card stack-sm">

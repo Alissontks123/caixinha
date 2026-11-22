@@ -49,10 +49,10 @@ const STEPS = (): Step[] => [
       ),
   },
   { tab: 'ajustes', target: 'sync', title: 'Conecte ao Google Drive', body: <p>Toque em <b>Conectar ao Google Drive</b> para guardar uma cópia dos dados e usar o app em mais de um aparelho. Se aparecer "O Google não verificou este app", toque em <b>Avançado → Acessar</b>.</p> },
-  { tab: 'painel', target: 'tabs', title: 'O menu', body: <p>As 6 abas ficam aqui em cima: <b>Painel</b>, <b>Gastos</b>, <b>Importar</b>, <b>Caixinha</b>, <b>Histórico</b> e <b>Ajustes</b>.</p> },
+  { tab: 'painel', target: 'tabs', title: 'O menu', body: <p>As 6 abas ficam aqui embaixo, ao alcance do polegar: <b>Painel</b>, <b>Gastos</b>, <b>Importar</b>, <b>Caixinha</b>, <b>Histórico</b> e <b>Ajustes</b>.</p> },
   { tab: 'painel', target: 'month', title: 'Escolha o mês', body: <p>Use <b>‹</b> e <b>›</b> para ver outros meses. Nos meses futuros aparecem as parcelas que já vão cair na fatura.</p> },
   { tab: 'painel', target: 'hero', title: 'Quanto aportar no mês', body: <p>A soma do <b>aporte fixo</b>, dos <b>gastos excedentes</b> e do que ficou faltando de <b>meses anteriores</b>. Embaixo, quanto já foi aportado e quanto falta.</p> },
-  { tab: 'painel', target: 'categories', title: 'Suas categorias', body: <p>Cada cartão mostra o gasto, o limite, quanto ainda dá para gastar, a comparação com o mês anterior e a previsão até o fim do mês. Toque num cartão para ver os gastos dele.</p> },
+  { tab: 'painel', target: 'categories', title: 'Suas categorias', body: <p>Cada cartão mostra no anel quanto do limite já foi usado, o gasto, quanto ainda dá para gastar, a comparação com o mês anterior e a previsão até o fim do mês. Toque num cartão para ver os gastos dele.</p> },
   { tab: 'importar', target: 'import', title: 'Importe as faturas', body: <p>Escolha o PDF da fatura (C6 ou Nubank) ou do extrato Nubank, até vários de uma vez. Na revisão, escolha a categoria do que o app não reconheceu (ele dá dicas como <b>💡 Parece: academia</b>) e, nas compras parceladas, se contam <b>por mês</b> ou <b>à vista</b>.</p> },
   { tab: 'lancamentos', target: 'search', title: 'Busque qualquer gasto', body: <p>Digite aqui para achar lançamentos de <b>todos os meses</b>. Com <b>Selecionar</b>, dá para mover vários de categoria de uma vez. Errou? Toque em <b>↶ Desfazer</b>.</p> },
   { tab: 'lancamentos', target: 'new', title: 'Lançamentos', body: <p>Crie gastos que não vieram da fatura. Ao tocar num lançamento, dá para <b>dividir com outras pessoas</b> (só a sua parte conta), <b>ratear entre categorias</b> e marcar <b>Repete todo mês</b> para assinaturas e contas fixas.</p> },
@@ -61,7 +61,7 @@ const STEPS = (): Step[] => [
   { tab: 'historico', target: 'charts', title: 'Histórico', body: <p>Gráficos dos meses, as parcelas dos próximos meses e o botão para baixar o relatório em PDF ou Excel.</p> },
   { tab: 'painel', target: 'close', title: 'Feche o mês', body: <p>Quando o mês acabar e tudo estiver classificado, feche o mês: os valores ficam congelados e o que faltar aportar passa para o mês seguinte.</p> },
   { tab: 'painel', target: 'sync-top', title: 'Sincronizar', body: <p>O <b>☁✓</b> mostra se está tudo sincronizado com o Google Drive. O botão <b>↻</b> sincroniza na hora (ou <b>☁</b> conecta, se ainda não estiver conectado).</p> },
-  { tab: 'painel', target: 'actions', title: 'Tour, tema e ajuda', body: <p><b>▶</b> mostra este tour de novo. <b>◐</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
+  { tab: 'painel', target: 'actions', title: 'Pontos, tour, modo e ajuda', body: <p><b>★</b> mostra seus pontos (em breve dão direito a novos temas). <b>▶</b> mostra este tour de novo. O botão de <b>sol/lua</b> troca entre automático, claro e escuro. <b>?</b> explica a tela em que você está.</p> },
   { tab: 'painel', title: 'Pronto!', body: <p>Agora é com você. Para ver este tour de novo, toque em <b>▶</b> no topo.</p> },
 ];
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { updateThemeColor } from './themes';
 
 /** Tema escolhido neste aparelho: automático (segue o sistema), claro ou escuro. */
 export type ThemePref = 'auto' | 'light' | 'dark';
@@ -20,6 +21,7 @@ export function applyTheme(pref: ThemePref = getThemePref()) {
   const root = document.documentElement;
   if (pref === 'auto') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', pref);
+  updateThemeColor();
 }
 
 export function setThemePref(pref: ThemePref) {

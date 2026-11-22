@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Celebration, CountUp, ErrorBox, ProgressBar, useAction } from '../components/ui';
+import { Celebration, CountUp, ErrorBox, useAction } from '../components/ui';
 import { closeMonth, reopenMonth } from '../db/repo';
 import { overflowBlocks, roomUntilNextBlock } from '../domain/rules';
 import { closeBlocker, summarizeMonth } from '../domain/summary';
@@ -11,6 +11,8 @@ import { computeLedger, computeStatements, startMonthOf } from '../domain/ledger
 import { myAmount } from '../domain/share';
 import { changeVsPrevious, forecastMonth, futureInstallments, recurringStatus } from '../domain/insights';
 import { summaryInput, type AppData } from '../useAppData';
+import { Icon, ICONS } from '../components/icons';
+import { DEFAULT_THEME, themeById } from '../lib/themes';
 
 interface Props {
   data: AppData & { profile: Profile };
@@ -43,13 +45,13 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
       <p className="cat-insight small">
         {change !== undefined && Math.abs(change) >= 0.01 && (
           <span className={change > 0 ? 'up' : 'down'}>
-            {change > 0 ? '↑' : '↓'} {Math.round(Math.abs(change) * 100)}% em relação a {prevName}
+            {change > 0 ? '↑' : '↓'} {Math.round(Math.abs(change) * 100)}% vs. {prevName}
           </span>
         )}
         {change !== undefined && Math.abs(change) < 0.01 && <span>= igual a {prevName}</span>}
         {forecast !== undefined && forecast > spent && (
           <span className={limit !== undefined && forecast > limit && spent <= limit ? 'warn' : ''}>
-            No ritmo atual, deve fechar em {formatMoney(forecast)}
+            Previsão: {formatMoney(forecast)}
             {limit !== undefined && forecast > limit && spent <= limit ? ' (acima do limite)' : ''}
           </span>
         )}
@@ -91,6 +93,9 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
   const threshold = data.profile.alertThreshold / 100;
   const { error, run } = useAction();
   const unidentifiedId = data.categories.find((c) => c.kind === 'unidentified')?.id;
+  const motif = themeById(data.profile.theme ?? DEFAULT_THEME).motif;
+  const withLimit = summary.categories.filter((c) => c.contributes !== false);
+  const withinLimit = withLimit.filter((c) => c.spent <= c.limit).length;
 
   const onClose = () => {
     const lines = [
@@ -164,25 +169,22 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
       )}
 
       {!beforeStart && (
-      <section className="card hero" data-tour="hero">
+        <section className="hero" data-tour="hero">
+          <span className="hero-motif"><Icon d={motif} size={180} width={1} /></span>
           <div className="hero-top">
-            <span className={`badge ${summary.closed ? 'closed' : 'open'}`}>
-              {summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}
-            </span>
+            <p className="hero-label">Aportes necessários no mês</p>
+            <span className="hero-badge">{summary.closed ? `Fechado em ${dateLabel(summary.closedAt!)}` : 'Mês aberto'}</span>
           </div>
-          <p className="hero-label">Aportes necessários no mês</p>
           {statement ? (
             <>
               <p className="hero-value"><CountUp cents={Math.max(statement.total, 0)} /></p>
-              <dl className="hero-lines">
-                <dt>Fixo devido</dt><dd>{formatMoney(statement.fixed)}</dd>
-                <dt>Gastos excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''}</dt>
-                <dd>{formatMoney(statement.overflow)}</dd>
-                {statement.resgates > 0 && <><dt>Resgates a repor</dt><dd>{formatMoney(statement.resgates)}</dd></>}
-                {statement.previous >= 0
-                  ? <><dt>Meses anteriores</dt><dd>{formatMoney(statement.previous)}</dd></>
-                  : <><dt>Crédito de meses anteriores</dt><dd className="refund">−{formatMoney(-statement.previous)}</dd></>}
-              </dl>
+              <ul className="hero-chips" aria-label="Composição do valor">
+                <li>Fixo <b>{formatMoney(statement.fixed)}</b></li>
+                <li>Excedentes{statement.overflowForecast && statement.overflow > 0 ? ' (previsão)' : ''} <b>{formatMoney(statement.overflow)}</b></li>
+                {statement.resgates > 0 && <li>Resgates a repor <b>{formatMoney(statement.resgates)}</b></li>}
+                {statement.previous > 0 && <li>Meses anteriores <b>{formatMoney(statement.previous)}</b></li>}
+                {statement.previous < 0 && <li>Crédito anterior <b className="text-ok">−{formatMoney(-statement.previous)}</b></li>}
+              </ul>
               <p className="hero-foot small">
                 Já aportado: <b>{formatMoney(statement.paid)}</b> ·{' '}
                 {statement.remaining > 0
@@ -195,10 +197,10 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
           ) : (
             <>
               <p className="hero-value"><CountUp cents={summary.totalDue} /></p>
-              <dl className="hero-lines">
-                <dt>Fixo devido</dt><dd>{formatMoney(summary.fixed)}</dd>
-                <dt>Gastos excedentes</dt><dd>{formatMoney(summary.overflowTotal)}</dd>
-              </dl>
+              <ul className="hero-chips" aria-label="Composição do valor">
+                <li>Fixo <b>{formatMoney(summary.fixed)}</b></li>
+                <li>Excedentes <b>{formatMoney(summary.overflowTotal)}</b></li>
+              </ul>
             </>
           )}
         </section>
@@ -206,8 +208,11 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
 
       {summary.unidentifiedCount > 0 && (
         <button className="card warn-card" onClick={() => goToTransactions(unidentifiedId)}>
-          <b>{summary.unidentifiedCount} lançamento(s) a identificar</b>
-          <span>{formatMoney(summary.unidentifiedTotal)} ainda sem categoria. Toque para classificar.</span>
+          <span className="warn-icon"><Icon d={ICONS.alert} size={18} width={2} /></span>
+          <span className="warn-text">
+            <b>{summary.unidentifiedCount} lançamento(s) a identificar</b>
+            <span>{formatMoney(summary.unidentifiedTotal)} ainda sem categoria. Toque para classificar.</span>
+          </span>
         </button>
       )}
 
@@ -255,17 +260,24 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
         </section>
       )}
 
-      <section className="stack-sm stagger" key={month}>
+      {summary.categories.length > 0 && (
+        <div className="section-head">
+          <h2>Categorias</h2>
+          {withLimit.length > 0 && <span className="small muted">{withinLimit} de {withLimit.length} dentro do limite</span>}
+        </div>
+      )}
+      <section className="cat-grid stagger" key={month}>
         {summary.categories.map((c, i) => {
           const order = { ['--i' as string]: i };
           if (c.contributes === false) {
             return (
-              <button key={c.categoryId} className="card cat-card" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
-                <div className="cat-head">
-                  <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
-                  <span className="pill neutral">Não gera aporte</span>
-                </div>
-                <div className="cat-values"><b>{formatMoney(c.spent)}</b><span className="muted"> gastos no mês</span></div>
+              <button key={c.categoryId} className="card cat-tile" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
+                <span className="tile-top">
+                  <span className="tile-badge" style={{ background: `color-mix(in srgb, ${c.color} 28%, transparent)` }}><span className="dot" style={{ background: c.color }} /></span>
+                  <span className="pill neutral">Sem aporte</span>
+                </span>
+                <span className="cat-name">{c.name}</span>
+                <span className="tile-values"><b>{formatMoney(c.spent)}</b> no mês</span>
                 {insights(c.categoryId, c.spent)}
               </button>
             );
@@ -276,29 +288,23 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
           const blocks = overflowBlocks(c.spent, c.limit, c.blockSize);
           const room = roomUntilNextBlock(c.spent, c.limit, c.blockSize);
           return (
-            <button key={c.categoryId} className="card cat-card" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
-              <div className="cat-head">
-                <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
+            <button key={c.categoryId} className="card cat-tile" style={order} data-tour={i === 0 ? 'categories' : undefined} onClick={() => goToTransactions(c.categoryId)}>
+              <span className="tile-top">
+                <Ring ratio={ratio} color={over ? 'var(--danger)' : alert ? 'var(--warn)' : c.color} label={`${c.name}: ${Math.round(ratio * 100)}% do limite`} />
                 {c.contribution > 0 && <span className="pill danger">+{formatMoney(c.contribution)}</span>}
-                {alert && <span className="pill warn">{Math.round(ratio * 100)}% do limite</span>}
-              </div>
-              <div className="cat-values">
-                <b>{formatMoney(c.spent)}</b>
-                <span className="muted"> de {formatMoney(c.limit)}</span>
-              </div>
-              <ProgressBar ratio={ratio} color={c.color} alert={alert} />
+                {alert && <span className="pill warn">Atenção</span>}
+              </span>
+              <span className="cat-name"><span className="dot" style={{ background: c.color }} />{c.name}</span>
+              <span className="tile-values"><b>{formatMoney(c.spent)}</b> de {formatMoney(c.limit)}</span>
               {over ? (
                 <>
-                  <p className="cat-foot small">
-                    Você excedeu o total de <b>{formatMoney(c.spent - c.limit)}</b>, gerando a necessidade de um aporte na caixinha de{' '}
-                    <b>{formatMoney(c.contribution)}</b>.
-                  </p>
-                  <p className="cat-foot muted small">
-                    {room === 0 ? 'Qualquer gasto a mais faz o aporte subir' : `Se gastar mais ${formatMoney(room)}, o aporte sobe`} para {formatMoney((blocks + 1) * c.blockAmount)}.
-                  </p>
+                  <span className="tile-foot small">Passou <b>{formatMoney(c.spent - c.limit)}</b> · aporte de <b>{formatMoney(c.contribution)}</b></span>
+                  <span className="tile-foot muted small">
+                    {room === 0 ? 'Qualquer gasto a mais' : `Mais ${formatMoney(room)}`} e o aporte sobe para {formatMoney((blocks + 1) * c.blockAmount)}.
+                  </span>
                 </>
               ) : (
-                <p className="cat-foot muted small">Você ainda pode gastar <b>{formatMoney(c.limit - c.spent)}</b> neste mês.</p>
+                <span className="tile-foot muted small">Ainda pode gastar <b>{formatMoney(c.limit - c.spent)}</b></span>
               )}
               {insights(c.categoryId, c.spent, c.limit)}
             </button>
@@ -328,5 +334,20 @@ export function Dashboard({ data, month, setMonth, goToTransactions, goToCaixinh
         <Celebration title="Mês quitado!" detail={`Já aportado: ${formatMoney(statement.paid)}`} onDone={() => setCelebrating(false)} />
       )}
     </div>
+  );
+}
+
+/** Anel com quanto do limite já foi usado (passa de 100% quando estourou). */
+function Ring({ ratio, color, label }: { ratio: number; color: string; label: string }) {
+  const r = 24;
+  const circ = 2 * Math.PI * r;
+  const filled = Math.min(Math.max(ratio, 0), 1) * circ;
+  return (
+    <svg className="ring" width="56" height="56" viewBox="0 0 60 60" role="img" aria-label={label}>
+      <circle cx="30" cy="30" r={r} className="ring-track" />
+      <circle cx="30" cy="30" r={r} className="ring-fill" stroke={color} strokeDasharray={`${filled} ${circ}`} transform="rotate(-90 30 30)"
+        style={{ ['--circ' as string]: circ }} />
+      <text x="30" y="34.5" textAnchor="middle" className="ring-text">{Math.round(ratio * 100)}%</text>
+    </svg>
   );
 }

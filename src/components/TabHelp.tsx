@@ -128,6 +128,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
     body: (
       <>
         <p><b>Perfil:</b> seu nome e a partir de qual porcentagem do limite o app avisa.</p>
+        <p><b>Aparência:</b> veja os 10 temas do app. Por enquanto só o Lavanda está liberado; os outros virão da loja de pontos. O tema vale em todos os seus aparelhos.</p>
         <p><b>Início da caixinha:</b> a partir de qual mês os aportes contam, e o saldo da caixinha no fim do mês anterior.
           Os meses antes do início não entram na conta; a partir dele, o que faltar aportar num mês passa para o seguinte.</p>
         <p><b>Aporte fixo mensal da caixinha</b> e <b>Categorias:</b> ao alterar, escolha a partir de qual mês a mudança vale. Meses fechados não mudam.</p>

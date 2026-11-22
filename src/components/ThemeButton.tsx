@@ -1,20 +1,21 @@
 import { setThemePref, useThemePref, type ThemePref } from '../lib/theme';
+import { Icon, ICONS } from './icons';
 
 const NEXT: Record<ThemePref, ThemePref> = { auto: 'light', light: 'dark', dark: 'auto' };
 const INFO: Record<ThemePref, { icon: string; label: string }> = {
-  auto: { icon: '◐', label: 'automático' },
-  light: { icon: '☀', label: 'claro' },
-  dark: { icon: '☾', label: 'escuro' },
+  auto: { icon: ICONS.auto, label: 'automático' },
+  light: { icon: ICONS.sun, label: 'claro' },
+  dark: { icon: ICONS.moon, label: 'escuro' },
 };
 
-/** Botão que alterna o tema: automático → claro → escuro. */
+/** Botão que alterna o modo: automático → claro → escuro. */
 export function ThemeButton() {
   const pref = useThemePref();
   const next = NEXT[pref];
-  const text = `Tema ${INFO[pref].label}. Toque para usar o tema ${INFO[next].label}`;
+  const text = `Modo ${INFO[pref].label}. Toque para usar o modo ${INFO[next].label}`;
   return (
     <button type="button" className="help-btn theme-btn" aria-label={text} title={text} onClick={() => setThemePref(next)}>
-      <span aria-hidden>{INFO[pref].icon}</span>
+      <Icon d={INFO[pref].icon} size={17} width={1.9} />
     </button>
   );
 }

@@ -6,7 +6,9 @@ import { initSync } from './sync/engine';
 import '@fontsource-variable/nunito';
 import './styles.css';
 import { applyTheme } from './lib/theme';
+import { applyPalette, cachedThemeId } from './lib/themes';
 
+applyPalette(cachedThemeId());
 applyTheme();
 
 // pede ao navegador para não apagar os dados locais quando faltar espaço

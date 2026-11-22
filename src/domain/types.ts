@@ -164,4 +164,6 @@ export interface Profile {
   goalMonth?: Month;
   /** Senha da fatura C6 (6 primeiros dígitos do CPF), salva só neste aparelho/conta. */
   c6Password?: string;
+  /** Tema (paleta de cores) escolhido; vale em todos os aparelhos. Sem ele, o padrão. */
+  theme?: string;
 }
