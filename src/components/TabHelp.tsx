@@ -129,7 +129,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
       <>
         <p>Você ganha <b>estrelas</b> cuidando do seu mês: categorias dentro do limite, aporte fixo pago, aporte extra,
           mês fechado em dia, sequências de meses sem estourar e marcos da meta da caixinha. As regras completas estão na própria Loja.</p>
-        <p>Com as estrelas, compre <b>avatares</b> e <b>temas</b>. O que você compra é seu para sempre e vale em todos os aparelhos.</p>
+        <p>Com as estrelas, compre <b>avatares</b> e <b>temas</b>, ou abra a <b>Caixa surpresa</b>: ela dá um item aleatório que você ainda não tem, e as chances ficam à mostra. O que você ganha é seu para sempre e vale em todos os aparelhos.</p>
         <p><b>Para ganhar neste mês</b> mostra o que ainda dá para conquistar agora, e o <b>Extrato de estrelas</b> lista cada estrela ganha e gasta.</p>
         <p className="muted">As estrelas são recalculadas com os seus dados: se um mês for reaberto e mudar, elas acompanham.</p>
       </>

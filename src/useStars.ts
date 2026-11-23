@@ -3,6 +3,7 @@ import { computeLedger, computeStatements, startMonthOf } from './domain/ledger'
 import { extraPaid, newMilestones, organizedDeadline, ownedItems, STAR_RULES, starEntries, starTotals, type StarEntry, type StarRecord, type StarsInput } from './domain/stars';
 import { summarizeMonth } from './domain/summary';
 import { formatMoney } from './lib/money';
+import { boxPityCount } from './lib/mysteryBox';
 import { addMonths, currentMonth, dateLabel, monthShort, todayISO } from './lib/months';
 import { summaryInput, type ReadyData } from './useAppData';
 
@@ -18,6 +19,8 @@ export interface StarsState {
   forecast: ForecastLine[];
   /** Marcos da meta alcançados e ainda não registrados (o App registra). */
   milestones: StarRecord[];
+  /** Caixas surpresa seguidas sem item premium (garantia na 6ª). */
+  boxPity: number;
 }
 
 export function starsInput(data: ReadyData, today = todayISO()): StarsInput {
@@ -32,7 +35,7 @@ export function computeStars(data: ReadyData, today = todayISO()): StarsState {
   const input = starsInput(data, today);
   const entries = starEntries(input);
   const totals = starTotals(entries);
-  return { entries, ...totals, owned: ownedItems(data.stars), forecast: monthForecast(data, input, entries), milestones: newMilestones(input) };
+  return { entries, ...totals, owned: ownedItems(data.stars), forecast: monthForecast(data, input, entries), milestones: newMilestones(input), boxPity: boxPityCount(data.stars) };
 }
 
 export function useStars(data: ReadyData | undefined): StarsState | undefined {

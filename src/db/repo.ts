@@ -3,11 +3,13 @@ import { recurringKey } from '../domain/insights';
 import { BACKUP_TABLES, CATEGORY_COLORS, DEFAULT_CATEGORIES, SPECIAL_CATEGORIES, UNIDENTIFIED_ID, db } from './db';
 import { monthOf, todayISO } from '../lib/months';
 import type { MonthSummary } from '../domain/summary';
-import type { StarRecord } from '../domain/stars';
+import { ownedItems, type StarRecord } from '../domain/stars';
 import type {
   AllocationPart, CaixinhaMovement, Category, Cents, ISODate, KnownCard, LearnedRule, Month, Profile, Transaction,
 } from '../domain/types';
 import { resolveCategory, type ReviewItem } from '../import/prepare';
+import { BOX, drawBox, secureRandom } from '../lib/mysteryBox';
+import type { ShopItem } from '../lib/shop';
 import type { ParsedDocument } from '../import/types';
 
 const uid = () => crypto.randomUUID();
@@ -74,6 +76,19 @@ export async function buyItem(item: { key: string; name: string; price: number }
   if (await db.stars.get(id)) throw new Error(`${item.name} já é seu.`);
   if (balance < item.price) throw new Error(`Faltam ${item.price - balance} estrelas para comprar ${item.name}.`);
   await db.stars.put({ id, kind: 'compra', item: item.key, amount: item.price, date: todayISO(), label: `Comprou ${item.name}` });
+}
+
+/** Abre a Caixa surpresa: sorteia um item que a pessoa ainda não tem e desconta o preço. */
+export async function openBox(balance: number): Promise<ShopItem> {
+  if (balance < BOX.price) throw new Error(`Faltam ${BOX.price - balance} estrelas para abrir a Caixa surpresa.`);
+  const records = await db.stars.toArray();
+  const item = drawBox(ownedItems(records), records, secureRandom);
+  if (!item) throw new Error('Você já tem todos os itens da Loja!');
+  await db.stars.put({
+    id: `compra-${item.key}`, kind: 'compra', item: item.key, amount: BOX.price, date: todayISO(),
+    label: `Caixa surpresa: ${item.name}`, box: true, openedAt: Date.now(),
+  });
+  return item;
 }
 
 /** Registra marcos da meta alcançados (cada um só uma vez). */

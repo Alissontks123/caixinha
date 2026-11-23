@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { BuyDialog, ItemPreview } from '../components/BuyDialog';
 import { Icon, ICONS, StarIcon } from '../components/icons';
+import { MysteryBoxCard } from '../components/MysteryBox';
 import { ErrorBox, useAction } from '../components/ui';
 import { updateProfile } from '../db/repo';
 import { STAR_PRICES, STAR_RULES } from '../domain/stars';
 import type { Profile } from '../domain/types';
 import { DEFAULT_AVATAR } from '../lib/avatars';
 import { dateLabel } from '../lib/months';
+import { BOX } from '../lib/mysteryBox';
 import { SHOP_ITEMS, type ShopItem } from '../lib/shop';
 import { DEFAULT_THEME } from '../lib/themes';
 import type { StarsState } from '../useStars';
@@ -51,6 +53,8 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
           </ul>
         </section>
       )}
+
+      <MysteryBoxCard stars={stars} />
 
       <section className="card stack-sm">
         <h2 className="card-title">Itens</h2>
@@ -112,6 +116,7 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
         <h2 className="card-title">Como usar</h2>
         <ul className="rules-list">
           <li>Avatar: <b>{STAR_PRICES.avatarLoja}</b> estrelas</li>
+          <li>Caixa surpresa (um item aleatório que você não tem): <b>{BOX.price}</b> estrelas</li>
           <li>Tema: <b>{STAR_PRICES.temaComum}</b> estrelas</li>
           <li>Avatar premium (animado): <b>{STAR_PRICES.avatarPremium}</b> estrelas</li>
           <li>Tema premium (animado): <b>{STAR_PRICES.temaPremium}</b> estrelas</li>

@@ -41,6 +41,10 @@ export interface StarRecord {
   amount: number;
   date: ISODate;
   label: string;
+  /** Compra que veio da Caixa surpresa. */
+  box?: boolean;
+  /** Quando a caixa foi aberta (ms), para a garantia de premium. */
+  openedAt?: number;
   updatedAt?: number;
 }
 

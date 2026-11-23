@@ -982,3 +982,57 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
   background: none; border: 0; color: inherit; cursor: pointer; border-radius: 12px;
 }
 .shop-hint { font-size: 0.7rem; font-weight: 700; color: var(--primary); text-decoration: underline; }
+
+/* ================= Caixa surpresa ================= */
+.rarity-comum { --rar: #3f8f6b; }
+.rarity-raro { --rar: #3b78c4; }
+.rarity-epico { --rar: #8e4fd0; }
+.rarity-lendario { --rar: #c98a12; }
+.rarity-tag {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
+  color: var(--text); background: color-mix(in srgb, var(--rar) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--rar) 45%, transparent);
+}
+.rarity-tag::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--rar); }
+.box-card { position: relative; overflow: hidden; }
+.box-head { display: flex; align-items: center; gap: 14px; }
+.box-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.box-art { flex: none; overflow: visible; }
+.box-idle { animation: boxBob 3.2s ease-in-out infinite; }
+@keyframes boxBob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-2deg); } }
+.box-pity { margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--primary-soft); color: var(--text); }
+.box-pity.on { font-weight: 700; }
+.box-open-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.box-odds summary { cursor: pointer; color: var(--primary); font-weight: 700; }
+.box-odds ul { list-style: none; margin: 10px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.box-odds li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+
+.box-dialog p { margin: 0; }
+.box-stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
+.box-shake { animation: boxShake 0.5s ease-in-out infinite; transform-origin: 50% 90%; }
+.box-shake .box-lid { animation: boxLid 0.5s ease-in-out infinite; }
+@keyframes boxShake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
+@keyframes boxLid { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.box-reveal { position: relative; display: grid; place-items: center; height: 170px; overflow: hidden; border-radius: 18px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rar) 30%, var(--surface)) 0%, var(--surface) 70%); }
+.rarity-glow-comum { --rar: #3f8f6b; }
+.rarity-glow-raro { --rar: #3b78c4; }
+.rarity-glow-epico { --rar: #8e4fd0; }
+.rarity-glow-lendario { --rar: #c98a12; }
+.box-rays { position: absolute; width: 340px; height: 340px; border-radius: 50%; opacity: 0.35;
+  background: repeating-conic-gradient(var(--rar) 0deg 10deg, transparent 10deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 15%, transparent 65%); mask: radial-gradient(circle, #000 15%, transparent 65%);
+  animation: boxSpin 14s linear infinite; }
+@keyframes boxSpin { to { transform: rotate(360deg); } }
+.box-prize { position: relative; display: grid; place-items: center; padding: 8px; border-radius: 24px; background: var(--surface);
+  box-shadow: 0 0 0 3px var(--rar), 0 0 32px color-mix(in srgb, var(--rar) 60%, transparent);
+  animation: boxPop 0.6s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes boxPop { from { transform: scale(0.3) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.box-won { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.box-won-name { font-family: var(--font-display); font-size: 1.35rem; }
+.box-actions { flex-wrap: wrap; }
+.box-actions .btn { display: inline-flex; align-items: center; gap: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .box-idle, .box-shake, .box-shake .box-lid, .box-rays, .box-prize { animation: none; }
+}
