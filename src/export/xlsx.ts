@@ -7,12 +7,14 @@ import type { Report } from './report';
  * Valores em reais são gravados como número com formato de moeda, para dar para somar no Excel.
  */
 type Cell = string | number | null | undefined;
-type ColType = 'text' | 'money';
+type ColType = 'text' | 'money' | 'wrap';
 
 export interface Sheet {
   name: string;
   columns: { header: string; width: number; type?: ColType }[];
   rows: Cell[][];
+  /** Listas de seleção (ex.: coluna Categoria escolhendo da aba Categorias). */
+  validations?: { sqref: string; formula: string }[];
 }
 
 const esc = (s: string) =>
@@ -31,12 +33,18 @@ function sheetXml(sheet: Sheet): string {
       const ref = `${colLetter(i)}${rn}`;
       if (v === null || v === undefined || v === '') return '';
       if (typeof v === 'number') return `<c r="${ref}"${sheet.columns[i]?.type === 'money' ? ' s="1"' : ''}><v>${v}</v></c>`;
-      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+      return `<c r="${ref}" t="inlineStr"${sheet.columns[i]?.type === 'wrap' ? ' s="3"' : ''}><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
     }).join('');
     return `<row r="${rn}">${cells}</row>`;
   }).join('');
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${header}${body}</sheetData></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${header}${body}</sheetData>${validationsXml(sheet)}</worksheet>`;
+}
+
+function validationsXml(sheet: Sheet): string {
+  const v = sheet.validations ?? [];
+  if (!v.length) return '';
+  return `<dataValidations count="${v.length}">${v.map((d) => `<dataValidation type="list" allowBlank="1" showErrorMessage="0" sqref="${d.sqref}"><formula1>${esc(d.formula)}</formula1></dataValidation>`).join('')}</dataValidations>`;
 }
 
 export function writeXlsx(sheets: Sheet[]): Uint8Array {
@@ -50,7 +58,7 @@ export function writeXlsx(sheets: Sheet[]): Uint8Array {
     'xl/_rels/workbook.xml.rels': strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`),
     'xl/styles.xml': strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;[Red]-&quot;R$&quot; #,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0"/><xf numFmtId="164" fontId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" applyFont="1"/></cellXfs></styleSheet>`),
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;[Red]-&quot;R$&quot; #,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0"/><xf numFmtId="164" fontId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" applyFont="1"/><xf numFmtId="0" fontId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`),
   };
   sheets.forEach((s, i) => { files[`xl/worksheets/sheet${i + 1}.xml`] = strToU8(sheetXml(s)); });
   return zipSync(files, { level: 6 });

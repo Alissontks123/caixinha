@@ -15,6 +15,7 @@ import { startMonthOf } from '../domain/ledger';
 import { Icon, ICONS } from '../components/icons';
 import { DEFAULT_THEME, themeById } from '../lib/themes';
 import { BANK_NAME } from '../import/prepare';
+import { ProfilePurchaseCard } from '../components/ProfileImport';
 import type { AppData } from '../useAppData';
 
 type Data = AppData & { profile: Profile };
@@ -199,6 +200,8 @@ function ImportSettings({ data }: { data: Data }) {
           </>
         )}
       </section>
+
+      <ProfilePurchaseCard categories={data.categories} rules={data.learnedRules} />
 
       <section className="card stack-sm">
         <h2>Estabelecimentos memorizados ({rules.length})</h2>

@@ -189,6 +189,13 @@ export async function setTransactionCategory(id: string, categoryId: string): Pr
   return setCategoryForMany([id], categoryId);
 }
 
+/** Perfil de compra importado da planilha: memoriza cada estabelecimento (e corrige os "A identificar" dele). */
+export async function learnRules(rules: { key: string; categoryId: string; example: string }[]) {
+  await db.transaction('rw', [db.transactions, db.learnedRules, db.closings], async () => {
+    for (const r of rules) await learn(r.key, r.categoryId, r.example);
+  });
+}
+
 /**
  * Memoriza a categoria de um estabelecimento e já aplica aos lançamentos
  * desse estabelecimento que ainda estão em "A identificar" (em meses abertos).
