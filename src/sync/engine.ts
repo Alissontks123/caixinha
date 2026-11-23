@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { db, onLocalChange, withSyncApply } from '../db/db';
-import { clearToken, driveConfigured, getToken, handleRedirect, startLogin } from './auth';
-import { AuthExpiredError, downloadFile, fetchEmail, findDataFile, uploadFile } from './drive';
+import { clearToken, driveConfigured, getToken, handleRedirect, markMissingScope, MISSING_SCOPE, startLogin } from './auth';
+import { AuthExpiredError, downloadFile, fetchEmail, findDataFile, MISSING_SCOPE_MESSAGE, MissingScopeError, uploadFile } from './drive';
 import { countRecords, mergeSnapshots, stableStringify, SYNC_TABLES, unifyCategories, type Rec, type Snapshot } from './merge';
 
 // ---------- estado observável pela interface ----------
@@ -104,7 +104,9 @@ export async function initSync() {
   });
 
   if (redirect.type === 'error') {
-    const msg = redirect.error === 'access_denied' ? 'Login no Google cancelado.' : `Login no Google: ${redirect.error}`;
+    const msg = redirect.error === 'access_denied' ? 'Login no Google cancelado.'
+      : redirect.error === MISSING_SCOPE ? MISSING_SCOPE_MESSAGE
+      : `Login no Google: ${redirect.error}`;
     setState(redirect.purpose === 'silent' ? { status: 'needs-auth' } : { status: meta.enabled ? 'error' : 'off', error: msg });
     return;
   }
@@ -261,6 +263,11 @@ export async function syncNow(): Promise<void> {
 }
 
 function handleError(e: unknown) {
+  if (e instanceof MissingScopeError) {
+    markMissingScope();
+    setState({ status: enabled ? 'error' : 'off', error: e.message });
+    return;
+  }
   if (e instanceof AuthExpiredError) {
     clearToken();
     setState({ status: 'needs-auth' });

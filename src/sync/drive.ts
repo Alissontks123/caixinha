@@ -6,6 +6,14 @@ export class AuthExpiredError extends Error {
   constructor() { super('O acesso ao Google expirou. Toque em "Reconectar".'); }
 }
 
+/** O login foi feito, mas sem a permissão do Google Drive (caixa desmarcada na tela do Google). */
+export class MissingScopeError extends Error {
+  constructor() { super(MISSING_SCOPE_MESSAGE); }
+}
+
+export const MISSING_SCOPE_MESSAGE =
+  'O Google não deu acesso ao Drive. Toque de novo para entrar e, na tela do Google, deixe MARCADA a permissão do Google Drive (dados de configuração do app). O Caixinha só vê os próprios dados, nunca os seus arquivos.';
+
 async function call(token: string, url: string, init: RequestInit = {}): Promise<Response> {
   let res: Response;
   try {
@@ -16,6 +24,7 @@ async function call(token: string, url: string, init: RequestInit = {}): Promise
   if (res.status === 401) throw new AuthExpiredError();
   if (!res.ok) {
     const body = await res.text().catch(() => '');
+    if (res.status === 403 && /insufficient(Permissions| authentication scopes)|SCOPE_INSUFFICIENT/i.test(body)) throw new MissingScopeError();
     throw new Error(`Google Drive respondeu ${res.status}${body ? `: ${body.slice(0, 160)}` : ''}`);
   }
   return res;

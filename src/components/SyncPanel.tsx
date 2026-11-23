@@ -7,7 +7,7 @@ const time = (ms?: number) =>
 export function statusText(s: SyncState): string {
   switch (s.status) {
     case 'unconfigured': return 'Sincronização ainda não configurada neste app.';
-    case 'off': return 'Desconectado.';
+    case 'off': return s.error ?? 'Desconectado.';
     case 'syncing': return 'Sincronizando…';
     case 'idle': return `Sincronizado em ${time(s.lastSyncAt)}.`;
     case 'needs-auth': return 'O acesso ao Google expirou. Toque em "Reconectar".';
@@ -27,7 +27,7 @@ export function SyncSettings() {
         todos os aparelhos em que você entrar com a mesma conta. É opcional.
       </p>
       {s.email && <p className="small">Conta: <b>{s.email}</b></p>}
-      <p className={`small ${s.status === 'error' || s.status === 'needs-auth' ? 'text-danger' : 'muted'}`} role="status">{statusText(s)}</p>
+      <p className={`small ${s.status === 'error' || s.status === 'needs-auth' || s.error ? 'text-danger' : 'muted'}`} role="status">{statusText(s)}</p>
       {s.notice && <p className="ok-box">{s.notice}</p>}
       <div className="row-end">
         {s.status === 'off' && <button className="btn primary" onClick={connect}>Conectar ao Google Drive</button>}

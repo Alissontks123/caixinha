@@ -4,7 +4,12 @@ import { GOOGLE_CLIENT_ID } from '../config';
  * Login no Google pelo fluxo de redirecionamento (funciona no iPhone com o app instalado na Tela de Início,
  * onde janelas pop-up costumam falhar). O token vale ~1 hora e fica só neste aparelho.
  */
-const SCOPES = 'https://www.googleapis.com/auth/drive.appdata openid email';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const SCOPES = `${DRIVE_SCOPE} openid email`;
+/** A pessoa desmarcou a permissão do Drive na tela do Google: no próximo login, a tela de permissões aparece de novo. */
+const CONSENT_KEY = 'caixinha.google.askConsent';
+/** Erro devolvido quando o Google não deu acesso ao Drive. */
+export const MISSING_SCOPE = 'missing_drive_scope';
 const TOKEN_KEY = 'caixinha.google.token';
 const STATE_KEY = 'caixinha.google.state';
 
@@ -36,7 +41,7 @@ export function startLogin(opts: { silent?: boolean; email?: string; purpose: st
     state,
   });
   if (opts.silent) p.set('prompt', 'none');
-  else p.set('prompt', 'select_account');
+  else p.set('prompt', storage.get(CONSENT_KEY) ? 'consent select_account' : 'select_account');
   if (opts.email) p.set('login_hint', opts.email);
   location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p}`);
 }
@@ -61,6 +66,13 @@ export function handleRedirect(): RedirectResult {
   const accessToken = p.get('access_token');
   const expiresIn = Number(p.get('expires_in') ?? 3600);
   if (!accessToken) return { type: 'error', purpose, error: 'O Google não devolveu o acesso.' };
+  // a tela do Google deixa desmarcar a permissão do Drive: sem ela, o login "funciona" mas nada sincroniza
+  const granted = p.get('scope');
+  if (granted !== null && !granted.split(' ').includes(DRIVE_SCOPE)) {
+    markMissingScope();
+    return { type: 'error', purpose, error: MISSING_SCOPE };
+  }
+  storage.del(CONSENT_KEY);
   storage.set(TOKEN_KEY, JSON.stringify({ accessToken, expiresAt: Date.now() + (expiresIn - 60) * 1000 }));
   return { type: 'ok', purpose };
 }
@@ -78,4 +90,10 @@ export function getToken(): Token | null {
 
 export function clearToken() {
   storage.del(TOKEN_KEY);
+}
+
+/** O acesso veio sem a permissão do Drive: descarta e pede a tela de permissões no próximo login. */
+export function markMissingScope() {
+  storage.del(TOKEN_KEY);
+  storage.set(CONSENT_KEY, '1');
 }

@@ -103,7 +103,7 @@ export function Setup({ onHelp }: { onHelp: () => void }) {
             ? <p className="small">Buscando seus dados…</p>
             : <button type="button" className="btn primary" onClick={connect}>Já uso em outro aparelho: entrar com Google</button>}
           {sync.notice && <p className="ok-box">{sync.notice}</p>}
-          {sync.status === 'error' && <p className="error-box">{statusText(sync)}</p>}
+          {(sync.status === 'error' || (sync.status === 'off' && sync.error)) && <p className="error-box">{statusText(sync)}</p>}
         </section>
       )}
       <form onSubmit={submit} className="stack">
