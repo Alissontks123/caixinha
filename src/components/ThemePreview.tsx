@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { updateProfile } from '../db/repo';
 import type { Profile } from '../domain/types';
-import { shopItem, themeOwned } from '../lib/shop';
+import { daySlotName, type DaySlot } from '../lib/daySlot';
+import { itemForTheme, themeOwned } from '../lib/shop';
 import { DEFAULT_THEME, themeById } from '../lib/themes';
 import type { StarsState } from '../useStars';
 import { BuyDialog } from './BuyDialog';
@@ -12,16 +13,19 @@ import { ErrorBox, useAction } from './ui';
  * Faixa fixa no topo durante a prévia de um tema no Painel: troca claro/escuro, compra ou usa, e fecha.
  * Nada é salvo enquanto a pessoa só olha.
  */
-export function ThemePreviewBar({ themeId, dark, profile, stars, onToggleDark, onClose }: {
+export function ThemePreviewBar({ themeId, dark, profile, stars, onToggleDark, onClose, slot, onNextSlot }: {
   themeId: string;
   dark: boolean;
   profile: Profile;
   stars: StarsState;
   onToggleDark: () => void;
   onClose: () => void;
+  /** Tema lendário: o horário mostrado e o botão para ver o próximo (no lugar do claro/escuro). */
+  slot?: DaySlot;
+  onNextSlot?: () => void;
 }) {
   const t = themeById(themeId);
-  const item = shopItem(`tema:${t.id}`);
+  const item = itemForTheme(t.id);
   const owned = themeOwned(t.id, stars.owned);
   const inUse = (profile.theme ?? DEFAULT_THEME) === t.id;
   const [buying, setBuying] = useState(false);
@@ -31,12 +35,18 @@ export function ThemePreviewBar({ themeId, dark, profile, stars, onToggleDark, o
       <div className="preview-bar-inner">
         <div className="preview-bar-title">
           <span className="small muted">Prévia do tema</span>
-          <b>{t.name}{t.premium && <span className="premium-badge">Premium</span>}</b>
+          <b>{t.name}{t.premium && <span className="premium-badge">Premium</span>}{t.legendary && <span className="premium-badge lendario-badge">Lendário</span>}</b>
         </div>
-        <button type="button" className="help-btn" onClick={onToggleDark}
-          aria-label={dark ? 'Ver no modo claro' : 'Ver no modo escuro'} title={dark ? 'Ver no modo claro' : 'Ver no modo escuro'}>
-          <Icon d={dark ? ICONS.sun : ICONS.moon} size={17} width={1.9} />
-        </button>
+        {t.daySlots && slot && onNextSlot ? (
+          <button type="button" className="btn soft small" onClick={onNextSlot} aria-label={`Horário: ${daySlotName(slot)}. Toque para ver o próximo`}>
+            {daySlotName(slot)} ›
+          </button>
+        ) : (
+          <button type="button" className="help-btn" onClick={onToggleDark}
+            aria-label={dark ? 'Ver no modo claro' : 'Ver no modo escuro'} title={dark ? 'Ver no modo claro' : 'Ver no modo escuro'}>
+            <Icon d={dark ? ICONS.sun : ICONS.moon} size={17} width={1.9} />
+          </button>
+        )}
         {inUse ? (
           <span className="preview-bar-status"><Icon d={ICONS.check} size={14} width={2.4} /> Em uso</span>
         ) : owned ? (

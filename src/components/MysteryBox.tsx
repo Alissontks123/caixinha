@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { openBox, updateProfile } from '../db/repo';
 import { BOX, boxOdds, rarityName, rarityOf, type Rarity } from '../lib/mysteryBox';
-import type { ShopItem } from '../lib/shop';
+import { profilePatch, type ShopItem } from '../lib/shop';
 import type { StarsState } from '../useStars';
 import { ItemPreview } from './BuyDialog';
 import { StarIcon } from './icons';
@@ -145,7 +145,7 @@ function BoxDialog({ balance, owned, onClose }: { balance: number; owned: Set<st
                 <button type="button" className="btn ghost" onClick={open}>Abrir outra ({BOX.price} <StarIcon size={12} />)</button>
               )}
               <button type="button" className="btn primary" onClick={() => run(async () => {
-                await updateProfile(item.kind === 'tema' ? { theme: item.id } : { avatar: item.id });
+                await updateProfile(profilePatch(item));
                 onClose();
               })}>Usar agora</button>
             </div>

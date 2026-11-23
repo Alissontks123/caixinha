@@ -29,13 +29,13 @@ export const STAR_RULES = {
   metaMarcos: [25, 50, 75, 100] as const,
 };
 
-export const STAR_PRICES = { avatarLoja: 100, temaComum: 200, avatarPremium: 300, temaPremium: 500 };
+export const STAR_PRICES = { avatarLoja: 100, temaComum: 200, avatarPremium: 300, temaPremium: 500, lendario: 1000 };
 
 /** Registro guardado (e sincronizado): compra na loja ou marco da meta alcançado. */
 export interface StarRecord {
   id: string;
   kind: 'compra' | 'marco';
-  /** Compra: 'tema:<id>' ou 'avatar:<id>'. Marco: 'meta:<pct>'. */
+  /** Compra: 'tema:<id>', 'avatar:<id>' ou 'lendario:<id>' (avatar + tema). Marco: 'meta:<pct>'. */
   item: string;
   /** Sempre positivo (a compra desconta, o marco soma). */
   amount: number;

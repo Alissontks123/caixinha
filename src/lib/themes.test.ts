@@ -13,18 +13,19 @@ const contrast = (a: string, b: string) => {
 
 describe('temas', () => {
   it('são 10 comuns + 3 premium, com nomes e ids diferentes, e o padrão é o primeiro', () => {
-    expect(THEMES).toHaveLength(13);
-    expect(THEMES.filter((t) => !t.premium)).toHaveLength(10);
+    expect(THEMES).toHaveLength(14);
+    expect(THEMES.filter((t) => !t.premium && !t.legendary)).toHaveLength(10);
+    expect(THEMES.filter((t) => t.legendary).map((t) => t.id)).toEqual(['ceu']);
     expect(THEMES.filter((t) => t.premium).map((t) => t.id)).toEqual(['sakura', 'aquario', 'soneca']);
     expect(THEMES.filter((t) => t.premium).every((t) => t.effect === t.id)).toBe(true);
-    expect(new Set(THEMES.map((t) => t.id)).size).toBe(13);
-    expect(new Set(THEMES.map((t) => t.name)).size).toBe(13);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(14);
+    expect(new Set(THEMES.map((t) => t.name)).size).toBe(14);
     expect(THEMES[0].id).toBe(DEFAULT_THEME);
   });
 
   it('o texto fica legível (contraste mínimo 4,5:1) no claro e no escuro de todos os temas', () => {
     for (const t of THEMES) {
-      for (const p of [t.light, t.dark]) {
+      for (const p of [t.light, t.dark, ...Object.values(t.daySlots ?? {})]) {
         const pairs: [string, string, string][] = [
           ['texto/fundo', p.text, p.bg], ['texto/cartão', p.text, p.surface],
           ['secundário/fundo', p.muted, p.bg], ['secundário/cartão', p.muted, p.surface],

@@ -5,7 +5,7 @@
  * - premium: também da loja, animados e com moldura colorida.
  * O escolhido fica no perfil (sincroniza entre aparelhos).
  */
-export type AvatarTier = 'standard' | 'shop' | 'premium';
+export type AvatarTier = 'standard' | 'shop' | 'premium' | 'lendario';
 
 export interface AvatarInfo {
   id: string;
@@ -34,9 +34,11 @@ export const AVATARS: AvatarInfo[] = [
   { id: 'gatinho', name: 'Gatinho', tier: 'premium', detail: 'Pisca, mexe a orelha e solta coraçõezinhos' },
   { id: 'dragaozinho', name: 'Dragãozinho', tier: 'premium', detail: 'Pisca e solta fumacinha' },
   { id: 'unicornio', name: 'Unicórnio', tier: 'premium', detail: 'Crina de arco-íris mudando de cor e brilhos' },
+  // lendário: vem junto com o tema Céu de Bolso e muda com o horário
+  { id: 'nuvem', name: 'Nuvem', tier: 'lendario', detail: 'Muda com o horário: sol nascendo, óculos escuros, pôr do sol e lua' },
 ];
 
-export const TIER_LABEL: Record<AvatarTier, string> = { standard: 'Standard', shop: 'Loja', premium: 'Premium' };
+export const TIER_LABEL: Record<AvatarTier, string> = { standard: 'Standard', shop: 'Loja', premium: 'Premium', lendario: 'Lendário' };
 
 export function avatarById(id: string | undefined): AvatarInfo {
   return AVATARS.find((a) => a.id === id) ?? AVATARS[0];

@@ -5,7 +5,8 @@ import { ErrorBox, useAction } from '../components/ui';
 import { updateProfile } from '../db/repo';
 import type { Profile } from '../domain/types';
 import { DEFAULT_THEME, themeById, THEMES, type Palette, type Theme } from '../lib/themes';
-import { shopItem, themeOwned } from '../lib/shop';
+import { itemForTheme, themeOwned } from '../lib/shop';
+import { DAY_SLOTS, DaySlotPreview } from '../lib/daySlot';
 import { BuyDialog } from '../components/BuyDialog';
 import type { StarsState } from '../useStars';
 
@@ -16,7 +17,7 @@ export function Themes({ profile, stars, onBack }: { profile: Profile; stars: St
   const { error, run } = useAction();
   const inUse = selected.id === current.id;
   const unlocked = themeOwned(selected.id, stars.owned);
-  const forSale = shopItem(`tema:${selected.id}`);
+  const forSale = itemForTheme(selected.id);
   const [buying, setBuying] = useState(false);
 
   return (
@@ -30,18 +31,26 @@ export function Themes({ profile, stars, onBack }: { profile: Profile; stars: St
         <span className="points-badge"><StarIcon size={22} /></span>
         <div>
           <b>Você tem {stars.balance} estrelas</b>
-          <p className="small muted">Ganhe estrelas cuidando do seu mês e troque por temas: comuns por 200, premium por 500. As regras estão na aba Loja.</p>
+          <p className="small muted">Ganhe estrelas cuidando do seu mês e troque por temas: comuns por 200, premium por 500 e o lendário Céu de Bolso (vem com o avatar Nuvem) por 1000. As regras estão na aba Loja.</p>
         </div>
       </section>
 
       <section className="card stack-sm" aria-label={`Prévia do tema ${selected.name}`}>
         <div className="row-between">
-          <h2>{selected.name}{selected.premium && <span className="premium-badge">Premium</span>}</h2>
+          <h2>{selected.name}{selected.premium && <span className="premium-badge">Premium</span>}{selected.legendary && <span className="premium-badge lendario-badge">Lendário</span>}</h2>
           <span className="small muted">{selected.tagline}</span>
         </div>
         <div className="grid-2 theme-preview">
-          <PreviewSide key={`${selected.id}-c`} theme={selected} palette={selected.light} label="Claro" />
-          <PreviewSide key={`${selected.id}-e`} theme={selected} palette={selected.dark} label="Escuro" dark />
+          {selected.daySlots ? DAY_SLOTS.map((s) => (
+            <DaySlotPreview key={`${selected.id}-${s.id}`} slot={s.id}>
+              <PreviewSide theme={selected} palette={selected.daySlots![s.id]} label={`${s.name} · ${s.hours}`} dark={s.id === 'noite'} />
+            </DaySlotPreview>
+          )) : (
+            <>
+              <PreviewSide key={`${selected.id}-c`} theme={selected} palette={selected.light} label="Claro" />
+              <PreviewSide key={`${selected.id}-e`} theme={selected} palette={selected.dark} label="Escuro" dark />
+            </>
+          )}
         </div>
         {inUse ? (
           <button type="button" className="btn soft" disabled><Icon d={ICONS.check} size={18} width={2.2} /> Em uso</button>
@@ -58,7 +67,7 @@ export function Themes({ profile, stars, onBack }: { profile: Profile; stars: St
       <div className="theme-grid">
         {THEMES.map((t) => {
           const isCurrent = t.id === current.id;
-          const status = isCurrent ? 'Em uso' : themeOwned(t.id, stars.owned) ? 'Seu' : `${shopItem(`tema:${t.id}`)?.price ?? ''} estrelas`;
+          const status = isCurrent ? 'Em uso' : themeOwned(t.id, stars.owned) ? 'Seu' : `${itemForTheme(t.id)?.price ?? ''} estrelas`;
           return (
             <button key={t.id} type="button" className={`theme-card ${t.id === selected.id ? 'selected' : ''}`}
               aria-pressed={t.id === selected.id} aria-label={`Ver prévia do tema ${t.name}, ${status}`} onClick={() => setSelected(t)}>
@@ -67,7 +76,7 @@ export function Themes({ profile, stars, onBack }: { profile: Profile; stars: St
                 <span style={{ background: t.dark.hero, color: t.dark.primary }}><Icon d={t.motif} size={34} width={1.7} /></span>
               </span>
               <span className="theme-info">
-                <b>{t.name}{t.premium && <span className="premium-badge">Premium</span>}</b>
+                <b>{t.name}{t.premium && <span className="premium-badge">Premium</span>}{t.legendary && <span className="premium-badge lendario-badge">Lendário</span>}</b>
                 <span className="theme-dots" aria-hidden="true">
                   <i style={{ background: t.light.primary }} /><i style={{ background: t.light.accent }} /><i style={{ background: t.dark.primary }} />
                 </span>

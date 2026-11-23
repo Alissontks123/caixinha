@@ -1,3 +1,5 @@
+import { daySlotAt, type DaySlot } from './daySlot';
+
 /**
  * Temas do app (paletas pastel). Cada tema tem versão clara e escura; o claro/escuro continua
  * seguindo o aparelho (ou o botão ☀/☾), e o tema escolhido fica no perfil (sincroniza entre aparelhos).
@@ -36,14 +38,26 @@ export interface Theme {
   /** Tema premium: tem animação contínua (fundo leve em todas as telas e destaque no cartão do mês). */
   premium?: boolean;
   effect?: ThemeEffect;
+  /** Tema lendário: vem junto com um avatar e muda sozinho com o horário (ignora o claro/escuro). */
+  legendary?: boolean;
+  /** Cores de cada horário do dia (só nos lendários). */
+  daySlots?: Record<DaySlot, Palette>;
 }
 
-export type ThemeEffect = 'sakura' | 'aquario' | 'soneca';
+export type ThemeEffect = 'sakura' | 'aquario' | 'soneca' | 'ceu';
 
 export const DEFAULT_THEME = 'lavanda';
 
 /** Temas que já podem ser usados (os outros aparecem com cadeado até a loja existir). */
 export const UNLOCKED_THEMES: readonly string[] = [DEFAULT_THEME];
+
+/** Céu de Bolso: um céu para cada horário (manhã e tarde claros, entardecer rosado, noite escura). */
+const CEU: Record<DaySlot, Palette> = {
+  manha: { bg: '#eef6fd', surface: '#ffffff', surface2: '#e3eff9', text: '#1f3a55', muted: '#4f6a82', border: '#d6e6f3', primary: '#285f9a', ink: '#ffffff', soft: '#dcebf8', hero: '#e2f0fb', accent: '#ffc45c' },
+  tarde: { bg: '#e6f4ff', surface: '#ffffff', surface2: '#d9ecfb', text: '#10324f', muted: '#44637d', border: '#c9e2f5', primary: '#155a9c', ink: '#ffffff', soft: '#d3e8fa', hero: '#d8ecfc', accent: '#ff8a5c' },
+  entardecer: { bg: '#fbf0f6', surface: '#ffffff', surface2: '#f6e4ef', text: '#4a2350', muted: '#7a4f7c', border: '#efd7e6', primary: '#8a3f86', ink: '#ffffff', soft: '#f6dcef', hero: '#f8e2ef', accent: '#ffb3cf' },
+  noite: { bg: '#0d1433', surface: '#151e45', surface2: '#1c2752', text: '#e8ecff', muted: '#a9b2db', border: '#26325f', primary: '#aab6ff', ink: '#121a40', soft: '#222d5e', hero: '#18224d', accent: '#ffe07a', heroBg: '#2a3a85', heroInk: '#ffffff' },
+};
 
 export const THEMES: Theme[] = [
   {
@@ -125,7 +139,16 @@ export const THEMES: Theme[] = [
     light: { bg: '#f3f0fb', surface: '#ffffff', surface2: '#ece8f8', text: '#26234a', muted: '#5c5880', border: '#e2ddf4', primary: '#4a4592', ink: '#ffffff', soft: '#e2def7', hero: '#e8e4f8', accent: '#f2b37c' },
     dark: { bg: '#12112a', surface: '#1b1a3a', surface2: '#232248', text: '#ecebfb', muted: '#a9a6d0', border: '#2b2a55', primary: '#b3adf5', ink: '#1a1740', soft: '#29275a', hero: '#201f48', accent: '#f2b37c', heroBg: '#1c2757', heroInk: '#eef0ff' },
   },
+  // ---------- lendário (vem com o avatar Nuvem; muda com o horário) ----------
+  {
+    id: 'ceu', name: 'Céu de Bolso', tagline: 'Muda sozinho com o horário do dia', radius: 24, legendary: true, effect: 'ceu',
+    motif: 'M7 18a4 4 0 0 1-.5-8A5.5 5.5 0 0 1 17 9a4.5 4.5 0 0 1 .5 9z',
+    light: CEU.manha, dark: CEU.noite, daySlots: CEU,
+  },
 ];
+
+/** Cores do tema num horário (lendário) ou no claro/escuro (os outros). */
+export const slotPalette = (t: Theme, slot: DaySlot): Palette | undefined => t.daySlots?.[slot];
 
 export function themeById(id: string | undefined): Theme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
@@ -144,8 +167,14 @@ function vars(p: Palette, dark: boolean): string {
   ].join(';');
 }
 
-/** CSS do tema: claro por padrão; escuro quando o aparelho está no escuro (automático) ou o usuário escolheu escuro. */
-export function themeCss(t: Theme): string {
+/** CSS do tema: claro por padrão; escuro quando o aparelho está no escuro (automático) ou o usuário escolheu escuro.
+ * Lendário: as cores do horário, iguais no claro e no escuro. */
+export function themeCss(t: Theme, slot: DaySlot = daySlotAt()): string {
+  const sp = slotPalette(t, slot);
+  if (sp) {
+    const v = `${vars(sp, slot === 'noite')};--radius:${t.radius}px`;
+    return `:root{${v}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${v}}}:root[data-theme="dark"]{${v}}`;
+  }
   const light = `${vars(t.light, false)};--radius:${t.radius}px`;
   const dark = vars(t.dark, true);
   return `:root{${light}}`
@@ -162,7 +191,7 @@ export function cachedThemeId(): string | undefined {
 }
 
 /** Aplica o tema na página: troca as cores e a cor da barra do navegador. `remember: false` = só uma prévia. */
-export function applyPalette(id: string | undefined, remember = true) {
+export function applyPalette(id: string | undefined, remember = true, slot: DaySlot = daySlotAt()) {
   const t = themeById(id);
   let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
   if (!el) {
@@ -170,9 +199,18 @@ export function applyPalette(id: string | undefined, remember = true) {
     el.id = STYLE_ID;
     document.head.appendChild(el);
   }
-  const css = themeCss(t);
-  if (el.textContent !== css) el.textContent = css;
-  document.documentElement.dataset.palette = t.id;
+  const css = themeCss(t, slot);
+  const root = document.documentElement;
+  if (el.textContent !== css) {
+    // o horário mudou com o tema lendário em uso: as cores trocam devagar
+    if (t.daySlots && root.dataset.palette === t.id && root.dataset.slot !== slot) {
+      root.classList.add('theme-anim');
+      window.setTimeout(() => root.classList.remove('theme-anim'), 1200);
+    }
+    el.textContent = css;
+  }
+  root.dataset.palette = t.id;
+  root.dataset.slot = slot;
   updateThemeColor();
   if (remember) {
     try { localStorage.setItem(CACHE_KEY, t.id); } catch { /* sem armazenamento */ }
@@ -185,5 +223,6 @@ export function updateThemeColor() {
   const pref = document.documentElement.getAttribute('data-theme');
   const dark = pref === 'dark' || (pref !== 'light' && !!window.matchMedia?.('(prefers-color-scheme: dark)').matches);
   const meta = document.querySelector('meta[name="theme-color"]');
-  meta?.setAttribute('content', (dark ? t.dark : t.light).bg);
+  const sp = slotPalette(t, (document.documentElement.dataset.slot as DaySlot | undefined) ?? daySlotAt());
+  meta?.setAttribute('content', (sp ?? (dark ? t.dark : t.light)).bg);
 }

@@ -1030,3 +1030,56 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 @media (prefers-reduced-motion: reduce) {
   .box-idle, .box-shake, .box-shake .box-lid, .box-rays, .box-prize { animation: none; }
 }
+
+/* ================= lendário: Céu de Bolso ================= */
+.lendario-badge {
+  color: #3a2600; background: linear-gradient(110deg, #d69a1c 30%, #fff0b8 50%, #d69a1c 70%);
+  background-size: 250% 100%; animation: lgShimmer 3.2s linear infinite;
+}
+@keyframes lgShimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+.avatar-lendario::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(#e0a21a, #fff3b0, #f7c948, #fff8d6, #e0a21a); box-shadow: 0 0 10px rgba(247, 201, 72, 0.55);
+  animation: avSpin 3s linear infinite;
+}
+.lg-bob { animation: lgBob 3.4s ease-in-out infinite; }
+.lg-bob2 { animation: lgBob 4.6s ease-in-out infinite; }
+@keyframes lgBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.lg-rise, .ceu-rise { animation: lgRise 5s ease-in-out infinite alternate; }
+@keyframes lgRise { from { transform: translateY(12px); } to { transform: translateY(-2px); } }
+.lg-spin { transform-box: fill-box; transform-origin: center; animation: avSpin 16s linear infinite; }
+.lg-tw { animation: fxBlink 2.2s ease-in-out infinite; }
+.lg-zzz text { animation: lgZ 3s ease-in-out infinite; }
+.lg-zzz text:nth-child(2) { animation-delay: 0.6s; }
+.lg-zzz text:nth-child(3) { animation-delay: 1.2s; }
+@keyframes lgZ { 0% { opacity: 0; transform: translateY(4px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-7px); } }
+/* o céu atrás das telas: um degradê por horário, trocando devagar */
+.fx-sky { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s ease; }
+.fx-sky.on { opacity: 1; }
+.fx-ceu .fx-cloud { opacity: 0.75; }
+.fx-bird { position: absolute; left: 0; animation: lgFly linear infinite; }
+.fx-bird svg { display: block; animation: lgWings 0.4s ease-in-out infinite alternate; }
+@keyframes lgFly { 0% { transform: translate(-30px, 0); } 50% { transform: translate(50vw, -14px); } 100% { transform: translate(min(110vw, 900px), 4px); } }
+@keyframes lgWings { to { transform: scaleY(0.45); } }
+.fx-balloon { position: absolute; bottom: -40px; width: 16px; height: 20px; border-radius: 50% 50% 46% 46%; opacity: 0.85; animation: lgBalloon linear infinite; }
+.fx-balloon::after { content: ''; position: absolute; left: 7.5px; top: 20px; width: 1px; height: 16px; background: rgba(60, 80, 110, 0.4); }
+@keyframes lgBalloon { 0% { transform: translate(0, 0); } 50% { transform: translate(12px, -55vh); } 100% { transform: translate(-6px, -115vh); } }
+.fx-sparkle {
+  position: absolute; width: 9px; height: 9px; background: #fff3f8;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: fxBlink ease-in-out infinite;
+}
+.fx-shoot { position: absolute; width: 80px; height: 2px; border-radius: 2px; background: linear-gradient(270deg, #ffffff, transparent); opacity: 0; animation: lgShoot linear infinite; }
+@keyframes lgShoot { 0%, 85% { opacity: 0; transform: translate(0, 0) rotate(22deg); } 87% { opacity: 1; } 100% { opacity: 0; transform: translate(220px, 90px) rotate(22deg); } }
+/* cartão do mês: o sol (ou a lua) do horário */
+.hero-fx-ceu .ceu-sun { position: absolute; right: 18px; bottom: 14px; opacity: 0.95; }
+.ceu-spin { transform-box: fill-box; transform-origin: center; animation: avSpin 20s linear infinite; }
+.ceu-sunset {
+  position: absolute; right: -30px; bottom: -40px; width: 130px; height: 130px; border-radius: 50%;
+  background: radial-gradient(circle, #ffe29a 0 32%, rgba(255, 150, 120, 0.55) 55%, transparent 70%); animation: lgGlow 5s ease-in-out infinite alternate;
+}
+@keyframes lgGlow { to { transform: scale(1.1); } }
+.preview-hero .hero-fx-ceu .ceu-sun { right: 4px; bottom: 4px; scale: 0.6; transform-origin: bottom right; }
+.preview-hero .ceu-sunset { width: 52px; height: 52px; right: -20px; bottom: -24px; }
+@media (prefers-reduced-motion: reduce) {
+  .avatar-lendario::before, .lendario-badge, .lg-bob, .lg-bob2, .lg-rise, .lg-spin, .lg-tw, .lg-zzz text, .ceu-rise, .ceu-spin, .ceu-sunset { animation: none; }
+}

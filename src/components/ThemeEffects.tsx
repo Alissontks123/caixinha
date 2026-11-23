@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { DAY_SLOTS, useDaySlot, type DaySlot } from '../lib/daySlot';
 import { useIsDark } from '../lib/theme';
 import type { ThemeEffect } from '../lib/themes';
 
@@ -23,14 +24,88 @@ const FIREFLIES = particles(16, 3);
 const BUBBLES = particles(14, 11);
 const STARS = particles(26, 7);
 
+/** Céu de Bolso: um céu para cada horário, com nuvens, pássaros, balões, brilhos ou estrelas. */
+const CEU_SKY: Record<DaySlot, string> = {
+  manha: 'linear-gradient(180deg, #d8eeff, #fff1d6)',
+  tarde: 'linear-gradient(180deg, #a9dbff, #eaf6ff)',
+  entardecer: 'linear-gradient(180deg, #ffc6dc, #d9cdf7)',
+  noite: 'linear-gradient(180deg, #0b1434, #1c2860)',
+};
+const BIRDS = particles(5, 13);
+const BALLOONS = particles(6, 17);
+const SPARKLES = particles(12, 19);
+const BALLOON_COLORS = ['#ff6f61', '#ffd166', '#7bdff2', '#b892ff', '#ff9ecb'];
+
+function CeuSky({ slot, contained }: { slot: DaySlot; contained?: boolean }) {
+  const take = <T,>(list: T[]) => (contained ? list.slice(0, Math.ceil(list.length / 2)) : list);
+  return (
+    <>
+      {DAY_SLOTS.map((s) => <span key={s.id} className={`fx-sky ${s.id === slot ? 'on' : ''}`} style={{ background: CEU_SKY[s.id] }} />)}
+      {slot !== 'noite' && (
+        <>
+          <span className="fx-cloud" style={{ top: '18%', width: 110, height: 30, animationDuration: '55s' }} />
+          <span className="fx-cloud" style={{ top: '52%', width: 140, height: 34, animationDuration: '70s', animationDelay: '-35s' }} />
+          <span className="fx-cloud" style={{ top: '80%', width: 80, height: 22, animationDuration: '46s', animationDelay: '-18s' }} />
+        </>
+      )}
+      {slot === 'manha' && take(BIRDS).map((p, i) => (
+        <span key={i} className="fx-bird" style={{ top: `${8 + p.y * 40}%`, animationDuration: `${16 + p.dur * 10}s`, animationDelay: `${-p.delay * 24}s` }}>
+          <svg width="18" height="9" viewBox="0 0 18 9"><path d="M1 7q4 -6 8 0q4 -6 8 0" stroke="#3d5a78" strokeWidth="1.6" fill="none" strokeLinecap="round" /></svg>
+        </span>
+      ))}
+      {slot === 'tarde' && take(BALLOONS).map((p, i) => (
+        <span key={i} className="fx-balloon" style={{ left: `${4 + p.x * 90}%`, background: BALLOON_COLORS[i % BALLOON_COLORS.length], animationDuration: `${18 + p.dur * 12}s`, animationDelay: `${-p.delay * 30}s` }} />
+      ))}
+      {slot === 'entardecer' && take(SPARKLES).map((p, i) => (
+        <span key={i} className="fx-sparkle" style={{ left: `${p.x * 96}%`, top: `${p.y * 92}%`, animationDuration: `${2 + p.dur * 2}s`, animationDelay: `${-p.delay * 4}s` }} />
+      ))}
+      {slot === 'noite' && (
+        <>
+          {take(STARS).map((p, i) => (
+            <span key={i} className="fx-star" style={{ left: `${p.x * 98}%`, top: `${p.y * 96}%`, width: 1 + p.size * 2, height: 1 + p.size * 2, animationDuration: `${2 + p.dur * 3}s`, animationDelay: `${-p.delay * 4}s` }} />
+          ))}
+          <span className="fx-shoot" style={{ left: '10%', top: '12%', animationDuration: '9s' }} />
+          <span className="fx-shoot" style={{ left: '45%', top: '30%', animationDuration: '13s', animationDelay: '-6s' }} />
+        </>
+      )}
+    </>
+  );
+}
+
+/** Enfeite do Céu de Bolso no cartão do mês: o sol (ou a lua) do horário. */
+function CeuHero({ slot }: { slot: DaySlot }) {
+  if (slot === 'noite') {
+    return (
+      <>
+        {STARS.slice(0, 7).map((p, i) => (
+          <span key={i} className="fx-twinkle" style={{ left: `${58 + p.x * 37}%`, top: `${4 + p.y * 24}%`, fontSize: 7 + p.size * 6, animationDuration: `${2 + p.dur * 2}s`, animationDelay: `${-p.delay * 3}s` }}>✦</span>
+        ))}
+        <svg className="ceu-sun" width="54" height="54" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" fill="#ffe9a8" /></svg>
+      </>
+    );
+  }
+  if (slot === 'entardecer') return <span className="ceu-sunset" />;
+  return (
+    <svg className={`ceu-sun ${slot === 'manha' ? 'ceu-rise' : ''}`} width="64" height="64" viewBox="0 0 64 64">
+      <g className={slot === 'tarde' ? 'ceu-spin' : ''}>
+        <circle cx="32" cy="32" r="15" fill="#ffd36b" />
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <rect key={a} x="30.5" y="6" width="3" height="8" rx="1.5" fill="#ffd36b" transform={`rotate(${a} 32 32)`} />)}
+      </g>
+    </svg>
+  );
+}
+
 /** Fundo animado (atrás de todas as telas). `contained` = dentro de uma caixa (prévia em Temas). */
 export function ThemeBackdrop({ effect, contained, dark: forceDark }: { effect?: ThemeEffect; contained?: boolean; dark?: boolean }) {
   const systemDark = useIsDark();
+  const slot = useDaySlot();
   if (!effect) return null;
-  const dark = forceDark ?? systemDark;
+  // o Céu de Bolso segue o horário, não o claro/escuro
+  const dark = effect === 'ceu' ? slot === 'noite' : forceDark ?? systemDark;
   const take = <T,>(list: T[]) => (contained ? list.slice(0, Math.ceil(list.length / 2)) : list);
   return (
-    <div className={`fx-layer fx-${effect} ${dark ? 'fx-dark' : ''} ${contained ? 'fx-contained' : ''}`} aria-hidden="true">
+    <div className={`fx-layer fx-${effect} ${dark && effect !== 'ceu' ? 'fx-dark' : ''} ${contained ? 'fx-contained' : ''}`} aria-hidden="true">
+      {effect === 'ceu' && <CeuSky slot={slot} contained={contained} />}
       {effect === 'sakura' && !dark && take(PETALS).map((p, i) => (
         <span key={i} className="fx-petal" style={{ left: `${p.x * 96}%`, width: 9 + p.size * 7, height: (9 + p.size * 7) * 0.8, animationDuration: `${12 + p.dur * 8}s`, animationDelay: `${-p.delay * 20}s` }}><i /></span>
       ))}
@@ -63,9 +138,11 @@ export function ThemeBackdrop({ effect, contained, dark: forceDark }: { effect?:
 
 /** Enfeite dentro do cartão do mês (galho, peixinho, céu da soneca). */
 export function HeroDecor({ effect }: { effect?: ThemeEffect }) {
+  const slot = useDaySlot();
   if (!effect) return null;
   return (
     <span className={`hero-fx hero-fx-${effect}`} aria-hidden="true">
+      {effect === 'ceu' && <CeuHero slot={slot} />}
       {effect === 'sakura' && (
         <>
           <svg className="fx-branch" width="170" height="120" viewBox="0 0 170 120">

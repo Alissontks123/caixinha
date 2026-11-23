@@ -20,6 +20,7 @@ import { useStars } from './useStars';
 import { addStarRecords } from './db/repo';
 import { applyPalette, themeById, updateThemeColor } from './lib/themes';
 import { useIsDark } from './lib/theme';
+import { DaySlotPreview, nextDaySlot, useDaySlot, type DaySlot } from './lib/daySlot';
 import { ThemePreviewBar } from './components/ThemePreview';
 import { ThemeBackdrop } from './components/ThemeEffects';
 import { AvatarButton } from './components/Avatar';
@@ -55,14 +56,16 @@ export default function App() {
   // tema escolhido no perfil (vem sincronizado do Drive)
   const themeId = data?.profile?.theme;
   // prévia de um tema no Painel (aberta pela Loja): aplica as cores só enquanto está aberta
-  const [preview, setPreview] = useState<{ id: string; dark: boolean } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; dark: boolean; slot?: DaySlot } | null>(null);
   const systemDark = useIsDark();
-  useEffect(() => { if (data && !preview) applyPalette(themeId); }, [data, themeId, preview]);
+  // o tema lendário muda de cor quando o horário do dia muda
+  const liveSlot = useDaySlot();
+  useEffect(() => { if (data && !preview) applyPalette(themeId); }, [data, themeId, preview, liveSlot]);
   useEffect(() => {
     if (!preview) return;
     const root = document.documentElement;
     const before = root.getAttribute('data-theme');
-    applyPalette(preview.id, false);
+    applyPalette(preview.id, false, preview.slot);
     root.setAttribute('data-theme', preview.dark ? 'dark' : 'light');
     updateThemeColor();
     window.scrollTo(0, 0);
@@ -99,10 +102,12 @@ export default function App() {
     // o Painel de verdade com o tema da prévia; só para olhar (nada responde ao toque)
     const pd = { ...d, profile: { ...d.profile, theme: preview.id } };
     return (
+      <DaySlotPreview slot={preview.slot}>
       <div className="app preview-mode">
         <ThemeBackdrop effect={themeById(preview.id).effect} dark={preview.dark} />
         <ThemePreviewBar themeId={preview.id} dark={preview.dark} profile={d.profile} stars={stars!}
-          onToggleDark={() => setPreview({ ...preview, dark: !preview.dark })} onClose={() => setPreview(null)} />
+          onToggleDark={() => setPreview({ ...preview, dark: !preview.dark })} onClose={() => setPreview(null)}
+          slot={preview.slot} onNextSlot={() => setPreview({ ...preview, slot: nextDaySlot(preview.slot ?? liveSlot) })} />
         <main className="content preview-content">
           <div ref={(el) => el?.setAttribute('inert', '')}>
             <Dashboard data={pd} month={currentMonth()} setMonth={() => undefined} goToTransactions={() => undefined}
@@ -110,6 +115,7 @@ export default function App() {
           </div>
         </main>
       </div>
+      </DaySlotPreview>
     );
   }
 
@@ -163,7 +169,7 @@ export default function App() {
         {tab === 'historico' && <History data={d} />}
         {tab === 'ajustes' && <Settings data={d} onHelp={() => go('ajuda')} onThemes={() => go('temas')} />}
         {tab === 'temas' && <Themes profile={d.profile} stars={stars!} onBack={() => go('ajustes')} />}
-        {tab === 'loja' && <Store profile={d.profile} stars={stars!} onPreviewTheme={(id) => setPreview({ id, dark: systemDark })} />}
+        {tab === 'loja' && <Store profile={d.profile} stars={stars!} onPreviewTheme={(id) => setPreview({ id, dark: systemDark, slot: themeById(id).daySlots ? liveSlot : undefined })} />}
         {tab === 'ajuda' && <Help onBack={() => go('ajustes')} />}
       </main>
       <SyncChoiceModal />

@@ -9,11 +9,11 @@ import type { Profile } from '../domain/types';
 import { DEFAULT_AVATAR } from '../lib/avatars';
 import { dateLabel } from '../lib/months';
 import { BOX } from '../lib/mysteryBox';
-import { SHOP_ITEMS, type ShopItem } from '../lib/shop';
+import { legendaryById, profilePatch, SHOP_ITEMS, type ShopItem } from '../lib/shop';
 import { DEFAULT_THEME } from '../lib/themes';
 import type { StarsState } from '../useStars';
 
-type Section = 'avatar' | 'tema';
+type Section = 'avatar' | 'tema' | 'lendario';
 
 /** Aba Loja: saldo de estrelas, como ganhar e usar, itens à venda e extrato. */
 export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; stars: StarsState; onPreviewTheme: (id: string) => void }) {
@@ -21,8 +21,12 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
   const [buying, setBuying] = useState<ShopItem | null>(null);
   const { error, run } = useAction();
   const items = SHOP_ITEMS.filter((i) => i.kind === section);
-  const inUse = (i: ShopItem) => (i.kind === 'tema' ? (profile.theme ?? DEFAULT_THEME) : (profile.avatar ?? DEFAULT_AVATAR)) === i.id;
-  const use = (i: ShopItem) => run(() => updateProfile(i.kind === 'tema' ? { theme: i.id } : { avatar: i.id }));
+  // em uso: o avatar e/ou o tema do item estão no perfil (o lendário, os dois)
+  const inUse = (i: ShopItem) => {
+    const p = profilePatch(i);
+    return (p.theme === undefined || p.theme === (profile.theme ?? DEFAULT_THEME)) && (p.avatar === undefined || p.avatar === (profile.avatar ?? DEFAULT_AVATAR));
+  };
+  const use = (i: ShopItem) => run(() => updateProfile(profilePatch(i)));
 
   return (
     <div className="stack">
@@ -58,17 +62,18 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
 
       <section className="card stack-sm">
         <h2 className="card-title">Itens</h2>
-        <div className="segmented" role="tablist" aria-label="Tipo de item">
+        <div className="segmented three" role="tablist" aria-label="Tipo de item">
           <button type="button" role="tab" aria-selected={section === 'avatar'} className={section === 'avatar' ? 'active' : ''} onClick={() => setSection('avatar')}>Avatares</button>
           <button type="button" role="tab" aria-selected={section === 'tema'} className={section === 'tema' ? 'active' : ''} onClick={() => setSection('tema')}>Temas</button>
+          <button type="button" role="tab" aria-selected={section === 'lendario'} className={section === 'lendario' ? 'active' : ''} onClick={() => setSection('lendario')}>Lendários</button>
         </div>
         <div className="shop-grid">
           {items.map((i) => {
             const owned = stars.owned.has(i.key);
             return (
               <div key={i.key} className={`shop-item ${owned ? 'owned' : ''}`}>
-                {i.kind === 'tema' ? (
-                  <button type="button" className="shop-preview-btn" onClick={() => onPreviewTheme(i.id)} aria-label={`Ver o Painel com o tema ${i.name}`}>
+                {i.kind !== 'avatar' ? (
+                  <button type="button" className="shop-preview-btn" onClick={() => onPreviewTheme(i.kind === 'tema' ? i.id : legendaryById(i.id)!.theme)} aria-label={`Ver o Painel com o tema ${i.name}`}>
                     <ItemPreview item={i} size={64} />
                     <b className="shop-name">{i.name}</b>
                     <span className="shop-hint">Ver no Painel</span>
@@ -80,6 +85,7 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
                   </>
                 )}
                 {i.premium && <span className="premium-badge">Premium</span>}
+                {i.kind === 'lendario' && <span className="premium-badge lendario-badge">Lendário</span>}
                 {owned ? (
                   inUse(i)
                     ? <span className="shop-status"><Icon d={ICONS.check} size={12} width={2.4} /> Em uso</span>
@@ -94,6 +100,11 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
             );
           })}
         </div>
+        {section === 'lendario' && items.map((i) => (
+          <p key={i.key} className="small muted">
+            <b>{i.name}:</b> {legendaryById(i.id)?.detail} O tema segue o horário do dia, não o claro/escuro. Depois de comprar, dá para usar os dois juntos ou cada um com outro tema/avatar.
+          </p>
+        ))}
         <p className="small muted">Os Standard (Pintinho, Ratinho, Coelho) e o tema Lavanda são grátis. Para trocar o que já é seu: toque no avatar do topo ou em Ajustes › Aparência.</p>
         <ErrorBox error={error} />
       </section>
@@ -120,6 +131,7 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
           <li>Tema: <b>{STAR_PRICES.temaComum}</b> estrelas</li>
           <li>Avatar premium (animado): <b>{STAR_PRICES.avatarPremium}</b> estrelas</li>
           <li>Tema premium (animado): <b>{STAR_PRICES.temaPremium}</b> estrelas</li>
+          <li>Lendário (avatar + tema animados que mudam com o horário do dia): <b>{STAR_PRICES.lendario}</b> estrelas</li>
         </ul>
         <p className="small muted">O que você compra é seu para sempre e vale em todos os aparelhos conectados ao seu Google Drive.</p>
       </section>

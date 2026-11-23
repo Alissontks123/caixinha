@@ -129,7 +129,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
       <>
         <p>Você ganha <b>estrelas</b> cuidando do seu mês: categorias dentro do limite, aporte fixo pago, aporte extra,
           mês fechado em dia, sequências de meses sem estourar e marcos da meta da caixinha. As regras completas estão na própria Loja.</p>
-        <p>Com as estrelas, compre <b>avatares</b> e <b>temas</b>, ou abra a <b>Caixa surpresa</b>: ela dá um item aleatório que você ainda não tem, e as chances ficam à mostra. O que você ganha é seu para sempre e vale em todos os aparelhos.</p>
+        <p>Com as estrelas, compre <b>avatares</b>, <b>temas</b> e o lendário <b>Céu de Bolso</b> (avatar + tema que mudam com o horário do dia), ou abra a <b>Caixa surpresa</b>: ela dá um item aleatório que você ainda não tem, e as chances ficam à mostra. O que você ganha é seu para sempre e vale em todos os aparelhos.</p>
         <p><b>Para ganhar neste mês</b> mostra o que ainda dá para conquistar agora, e o <b>Extrato de estrelas</b> lista cada estrela ganha e gasta.</p>
         <p className="muted">As estrelas são recalculadas com os seus dados: se um mês for reaberto e mudar, elas acompanham.</p>
       </>
@@ -140,7 +140,7 @@ const TOPICS: Record<HelpTopic, { title: string; body: ReactNode }> = {
     body: (
       <>
         <p><b>Perfil:</b> seu nome e a partir de qual porcentagem do limite o app avisa.</p>
-        <p><b>Aparência:</b> veja os 13 temas do app (3 deles premium, com animação). O Lavanda é grátis; os outros são comprados com estrelas na Loja. O tema vale em todos os seus aparelhos.</p>
+        <p><b>Aparência:</b> veja os 14 temas do app (3 premium e 1 lendário, com animação). O Lavanda é grátis; os outros são comprados com estrelas na Loja. O tema vale em todos os seus aparelhos.</p>
         <p><b>Início da caixinha:</b> a partir de qual mês os aportes contam, e o saldo da caixinha no fim do mês anterior.
           Os meses antes do início não entram na conta; a partir dele, o que faltar aportar num mês passa para o seguinte.</p>
         <p><b>Aporte fixo mensal da caixinha</b> e <b>Categorias:</b> ao alterar, escolha a partir de qual mês a mudança vale. Meses fechados não mudam.</p>

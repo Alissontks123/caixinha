@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { updateProfile } from '../db/repo';
 import { AVATARS, avatarById, DEFAULT_AVATAR, TIER_LABEL, type AvatarTier } from '../lib/avatars';
-import { avatarOwned, shopItem, type ShopItem } from '../lib/shop';
+import { useDaySlot } from '../lib/daySlot';
+import { avatarOwned, itemForAvatar, type ShopItem } from '../lib/shop';
 import type { StarsState } from '../useStars';
 import { BuyDialog } from './BuyDialog';
 import { Icon, ICONS, StarIcon } from './icons';
@@ -154,13 +155,90 @@ const ART: Record<string, ReactNode> = {
   ),
 };
 
+/** Nuvem (lendário): muda com o horário do dia — sol nascendo, óculos escuros, pôr do sol e lua. */
+function NuvemArt() {
+  const slot = useDaySlot();
+  const uid = useId().replace(/:/g, '');
+  const cloud = (fill: string) => (
+    <g fill={fill}><circle cx="34" cy="58" r="15" /><circle cx="52" cy="48" r="20" /><circle cx="69" cy="58" r="14" /><rect x="26" y="56" width="50" height="17" rx="8.5" /></g>
+  );
+  const cheeks = <><circle cx="40" cy="64" r="2.6" fill="#ff9bb0" opacity=".6" /><circle cx="64" cy="64" r="2.6" fill="#ff9bb0" opacity=".6" /></>;
+  const smile = (c: string) => <path d="M47 65q5 4 10 0" stroke={c} strokeWidth="2" fill="none" strokeLinecap="round" />;
+  if (slot === 'manha') {
+    return (
+      <>
+        <circle cx="50" cy="50" r="50" fill="#ffe9c4" />
+        <circle className="lg-rise" cx="72" cy="38" r="13" fill="#ffc44d" />
+        <g className="lg-bob">
+          {cloud('#ffffff')}
+          <circle cx="45" cy="59" r="2.3" fill="#2d3550" /><circle cx="59" cy="59" r="2.3" fill="#2d3550" />
+          <circle cx="45.8" cy="58.2" r=".8" fill="#fff" /><circle cx="59.8" cy="58.2" r=".8" fill="#fff" />
+          {cheeks}{smile('#2d3550')}
+        </g>
+      </>
+    );
+  }
+  if (slot === 'tarde') {
+    return (
+      <>
+        <circle cx="50" cy="50" r="50" fill="#7cc6ff" />
+        <g className="lg-spin">
+          <circle cx="25" cy="27" r="9" fill="#ffd34d" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <rect key={a} x="24" y="11" width="2" height="5" rx="1" fill="#ffd34d" transform={`rotate(${a} 25 27)`} />)}
+        </g>
+        <g className="lg-bob">
+          {cloud('#ffffff')}
+          <rect x="39" y="55" width="11" height="7" rx="3" fill="#1d1d26" /><rect x="54" y="55" width="11" height="7" rx="3" fill="#1d1d26" />
+          <path d="M50 57.5h4" stroke="#1d1d26" strokeWidth="1.6" />
+          <path d="M41 57.5l3 -1.5M56 57.5l3 -1.5" stroke="#fff" strokeWidth="1" opacity=".75" />
+          <path d="M45 66q7 6 14 0" stroke="#2d3550" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        </g>
+      </>
+    );
+  }
+  if (slot === 'entardecer') {
+    return (
+      <>
+        <defs>
+          <linearGradient id={`${uid}a`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffb0c8" /><stop offset="1" stopColor="#a98ae6" /></linearGradient>
+          <linearGradient id={`${uid}b`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffe3ee" /><stop offset="1" stopColor="#f4a9c9" /></linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="50" fill={`url(#${uid}a)`} />
+        <g className="lg-bob">
+          {cloud(`url(#${uid}b)`)}
+          <path d="M42 60q3 -3 6 0M56 60q3 -3 6 0" stroke="#5a2d55" strokeWidth="2" fill="none" strokeLinecap="round" />
+          {cheeks}{smile('#5a2d55')}
+        </g>
+      </>
+    );
+  }
+  return (
+    <>
+      <circle cx="50" cy="50" r="50" fill="#121a40" />
+      {[[20, 22, 1.2], [80, 18, 1], [86, 40, 1.4], [30, 86, 1], [76, 82, 1.2], [60, 13, 0.9]].map(([x, y, r], i) => (
+        <circle key={i} className="lg-tw" style={{ animationDelay: `${i * 0.37}s` }} cx={x} cy={y} r={r} fill="#ffffff" />
+      ))}
+      <g className="lg-bob2"><circle cx="27" cy="44" r="11" fill="#ffe27a" /><circle cx="32" cy="40" r="9.5" fill="#121a40" /></g>
+      <g className="lg-bob">
+        {cloud('#5f6ba3')}
+        <path d="M42 59q3 3 6 0M56 59q3 3 6 0" stroke="#e6e9ff" strokeWidth="2" fill="none" strokeLinecap="round" />
+        <path d="M50 65.5h4" stroke="#e6e9ff" strokeWidth="2" strokeLinecap="round" />
+      </g>
+      <g className="lg-zzz" fill="#cfd8ff" fontWeight="800" fontFamily="system-ui, sans-serif">
+        <text x="72" y="40" fontSize="9">z</text><text x="79" y="32" fontSize="7">z</text><text x="84" y="25" fontSize="5">z</text>
+      </g>
+    </>
+  );
+}
+
 /** Avatar desenhado; os premium ganham a moldura colorida girando. */
 export function AvatarImage({ id, size = 40 }: { id?: string; size?: number }) {
   const a = avatarById(id ?? DEFAULT_AVATAR);
-  const inner = a.tier === 'premium' ? size - 6 : size;
+  const framed = a.tier === 'premium' || a.tier === 'lendario';
+  const inner = framed ? size - 6 : size;
   return (
-    <span className={`avatar ${a.tier === 'premium' ? 'avatar-premium' : ''}`} style={{ width: size, height: size }}>
-      <svg className="avatar-svg" width={inner} height={inner} viewBox="0 0 100 100" aria-hidden="true" focusable="false">{ART[a.id]}</svg>
+    <span className={`avatar ${a.tier === 'premium' ? 'avatar-premium' : ''} ${a.tier === 'lendario' ? 'avatar-lendario' : ''}`} style={{ width: size, height: size }}>
+      <svg className="avatar-svg" width={inner} height={inner} viewBox="0 0 100 100" aria-hidden="true" focusable="false">{a.id === 'nuvem' ? <NuvemArt /> : ART[a.id]}</svg>
     </span>
   );
 }
@@ -169,6 +247,7 @@ const TIERS: { tier: AvatarTier; hint: string }[] = [
   { tier: 'standard', hint: 'grátis para todos' },
   { tier: 'shop', hint: 'compre com estrelas' },
   { tier: 'premium', hint: 'compre com estrelas · animados' },
+  { tier: 'lendario', hint: 'vem no Céu de Bolso · muda com o horário' },
 ];
 
 /** Botão do topo com o avatar; abre a escolha. */
@@ -189,7 +268,7 @@ function AvatarPicker({ current, stars, onClose }: { current: string; stars: Sta
   const { error, run } = useAction();
   const [buying, setBuying] = useState<ShopItem | null>(null);
   const pick = (id: string) => {
-    if (!avatarOwned(id, stars.owned)) { setBuying(shopItem(`avatar:${id}`) ?? null); return; }
+    if (!avatarOwned(id, stars.owned)) { setBuying(itemForAvatar(id) ?? null); return; }
     void run(async () => { await updateProfile({ avatar: id }); onClose(); });
   };
   return (
@@ -202,7 +281,7 @@ function AvatarPicker({ current, stars, onClose }: { current: string; stars: Sta
             <div className="avatar-grid">
               {AVATARS.filter((a) => a.tier === tier).map((a) => {
                 const unlocked = avatarOwned(a.id, stars.owned);
-                const price = shopItem(`avatar:${a.id}`)?.price;
+                const price = itemForAvatar(a.id)?.price;
                 const inUse = a.id === current;
                 return (
                   <button key={a.id} type="button" className={`avatar-option ${inUse ? 'selected' : ''} ${unlocked ? '' : 'locked'}`}
