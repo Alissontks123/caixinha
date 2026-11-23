@@ -50,7 +50,7 @@ export interface Report {
 }
 
 const SOURCE: Record<string, string> = {
-  manual: 'Manual', 'fatura-c6': 'Fatura C6', 'fatura-nubank': 'Fatura Nubank', 'extrato-nubank': 'Extrato Nubank', extrato: 'Extrato Nubank',
+  manual: 'Manual', 'fatura-c6': 'Fatura C6', 'fatura-nubank': 'Fatura Nubank', 'extrato-nubank': 'Extrato Nubank', 'fatura-itau': 'Fatura Itaú', 'extrato-bb': 'Extrato BB', extrato: 'Extrato Nubank',
 };
 const MOVE: Record<CaixinhaMovement['type'], string> = { aplicacao: 'Aplicação', resgate: 'Resgate', saldo_informado: 'Saldo informado' };
 

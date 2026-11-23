@@ -72,6 +72,6 @@ export class PdfPasswordError extends Error {
 
 export class UnknownDocumentError extends Error {
   constructor() {
-    super('Não reconheci este PDF. São aceitos: fatura C6, fatura Nubank e extrato da conta Nubank.');
+    super('Não reconheci este PDF. São aceitos: faturas C6, Nubank e Itaú, e extratos da conta Nubank e Banco do Brasil.');
   }
 }

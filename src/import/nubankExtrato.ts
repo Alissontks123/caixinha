@@ -128,7 +128,7 @@ function classify(e: RawEntry, holder: string | undefined, ownCpf: string | unde
 
   const isOwn = (personCpf && ownCpf && personCpf === ownCpf) || (holder && name && sameName(name, holder));
   // pagar a fatura do cartão (boleto/Pix para o banco do cartão) não é gasto: as compras vêm da fatura
-  const isCardBill = !personCpf && /BANCO C6|C6 BANK|NU PAGAMENTOS|NUBANK/i.test(name);
+  const isCardBill = !personCpf && /BANCO C6|C6 BANK|NU PAGAMENTOS|NUBANK|ITAU UNIBANCO/i.test(stripAccents(name));
   if (/^(transferência enviada|pix enviado)/i.test(e.type)) {
     if (isOwn) return ignore('Transferência para conta própria');
     if (isCardBill) return ignore('Pagamento de fatura de cartão (as compras vêm da fatura)');

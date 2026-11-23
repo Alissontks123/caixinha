@@ -40,7 +40,7 @@ export interface FixedContributionVersion {
   amount: Cents;
 }
 
-export type TransactionSource = 'manual' | 'fatura-c6' | 'fatura-nubank' | 'extrato-nubank';
+export type TransactionSource = 'manual' | 'fatura-c6' | 'fatura-nubank' | 'extrato-nubank' | 'fatura-itau' | 'extrato-bb';
 
 export interface Transaction {
   id: string;
@@ -105,7 +105,7 @@ export interface LearnedRule {
 export interface KnownCard {
   /** `${bank}:${last4}` */
   id: string;
-  bank: 'c6' | 'nubank';
+  bank: 'c6' | 'nubank' | 'itau';
   last4: string;
   holder: string;
   mine: boolean;

@@ -63,7 +63,11 @@ export interface PrepareContext {
   caixinhaStartDate?: ISODate;
 }
 
-export const bankOf = (source: ParsedDocument['source']): KnownCard['bank'] => (source === 'fatura-c6' ? 'c6' : 'nubank');
+export const bankOf = (source: ParsedDocument['source']): KnownCard['bank'] =>
+  (source === 'fatura-c6' ? 'c6' : source === 'fatura-itau' ? 'itau' : 'nubank');
+
+/** Nome do banco do cartão para mostrar na tela. */
+export const BANK_NAME: Record<KnownCard['bank'], string> = { c6: 'C6', nubank: 'Nubank', itau: 'Itaú' };
 export const cardId = (bank: KnownCard['bank'], last4: string) => `${bank}:${last4}`;
 
 /** Cartões que aparecem no documento (para perguntar quais são do usuário). */

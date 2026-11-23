@@ -109,3 +109,37 @@ describe.skipIf(!has('extrato_nubank.pdf'))('extrato Nubank real', () => {
     expect(reasons).toContain('Conta Global (dinheiro continua seu)');
   });
 });
+
+describe.skipIf(!has('fatura_itau.pdf'))('fatura Itaú real', () => {
+  it('lê as duas colunas, as parcelas e bate com os totais', async () => {
+    const doc = await load('fatura_itau.pdf');
+    expect(doc.source).toBe('fatura-itau');
+    expectChecksOk(doc.checks);
+    expect(doc.checks).toHaveLength(3);
+    const items = counted(doc.items);
+    expect(items.length).toBeGreaterThan(20);
+    const parcels = items.filter((i) => i.installment && i.installment.n > 1);
+    expect(parcels.length).toBeGreaterThan(0);
+    for (const p of parcels) expect(p.month).toBe(addMonths(monthOf(p.date), p.installment!.n - 1));
+    expect(doc.items.every((i) => i.date <= doc.periodEnd)).toBe(true);
+    expect(doc.items.some((i) => i.kind === 'ignorado' && i.ignoreReason === 'Pagamento de fatura')).toBe(true);
+  });
+});
+
+for (const name of ['extrato_bb.pdf', 'extrato_bb_2.pdf']) {
+  describe.skipIf(!has(name))(`extrato Banco do Brasil real (${name})`, () => {
+    it('bate com o saldo final e classifica', async () => {
+      const doc = await load(name);
+      expect(doc.source).toBe('extrato-bb');
+      expectChecksOk(doc.checks);
+      expect(doc.items.filter((i) => i.kind === 'pix_pessoa').length).toBeGreaterThan(0);
+      expect(doc.items.filter((i) => i.kind === 'pix_empresa').length).toBeGreaterThan(0);
+      const reasons = doc.items.map((i) => i.ignoreReason);
+      expect(reasons).toContain('Aplicação/resgate automático (BB Rende Fácil)');
+      expect(reasons).toContain('Transferência para conta própria');
+      expect(reasons).toContain('Poupança (investimento, não é gasto)');
+      // nenhum "Saldo do dia" vira lançamento
+      expect(doc.items.some((i) => /Saldo/i.test(i.description))).toBe(false);
+    });
+  });
+}

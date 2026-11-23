@@ -53,7 +53,7 @@ export function Help({ onBack }: { onBack: () => void }) {
 
       <Item title="Importar faturas e extratos">
         <ol>
-          <li>No app do banco, baixe o <b>PDF</b> da fatura do cartão (C6 ou Nubank) ou do extrato da conta Nubank.</li>
+          <li>No app do banco, baixe o <b>PDF</b> da fatura do cartão (C6, Nubank ou Itaú) ou do extrato da conta (Nubank ou Banco do Brasil).</li>
           <li>Aqui, vá em <b>Importar</b> → <b>Escolher arquivo PDF</b> e selecione o arquivo. No iPhone, ele costuma estar em <b>Arquivos</b> → <b>Downloads</b>.</li>
           <li>A fatura da C6 pede senha: os <b>6 primeiros dígitos do CPF</b> do titular. O app guarda a senha para as próximas vezes.</li>
           <li>Na revisão, escolha a categoria do que o app não reconheceu e toque em <b>Importar</b>. O que você ensinar, ele memoriza.</li>

@@ -8,7 +8,7 @@ import { alertsForChange, describeAlert, type ChangeAlert } from '../domain/aler
 import type { AllocationPart, Category, KnownCard, Month, Transaction } from '../domain/types';
 import { readPdfInBrowser } from '../import/pdfBrowser';
 import { parseDocument } from '../import/parse';
-import { cardsInDocument, prepareReview, resolveCategory, type ReviewItem, type ReviewStatus } from '../import/prepare';
+import { BANK_NAME, cardsInDocument, prepareReview, resolveCategory, type ReviewItem, type ReviewStatus } from '../import/prepare';
 import { PdfPasswordError, type ParsedDocument } from '../import/types';
 import { formatMoney } from '../lib/money';
 import { dateLabel, monthLabel } from '../lib/months';
@@ -155,7 +155,7 @@ export function Import({ data, goToTransactions }: Props) {
         <section className="card stack" data-tour="import">
           <h2>Importar PDF</h2>
           <p className="muted small">
-            Aceita <b>fatura do cartão C6</b>, <b>fatura do cartão Nubank</b> e <b>extrato da conta Nubank</b>.
+            Aceita <b>faturas dos cartões C6, Nubank e Itaú</b> e <b>extratos da conta Nubank e Banco do Brasil</b>.
             Dá para escolher vários arquivos de uma vez: o app mostra a revisão de um depois do outro.
             Os arquivos são lidos só neste aparelho e não são enviados para lugar nenhum.
           </p>
@@ -329,7 +329,7 @@ function CardsStep({ cards, onConfirm, onCancel }: {
           <input type="checkbox" checked={c.mine} onChange={(e) => setList((l) => l.map((x) => (x.id === c.id ? { ...x, mine: e.target.checked } : x)))} />
           <span className="switch" aria-hidden />
           <span>
-            <b>{c.bank === 'c6' ? 'C6' : 'Nubank'} final {c.last4}</b>
+            <b>{BANK_NAME[c.bank] ?? c.bank} final {c.last4}</b>
             <span className="muted small block">{c.holder}</span>
           </span>
         </label>
@@ -601,6 +601,7 @@ function reviewAmount(r: ReviewItem, avista: Set<number>): number {
 
 const SOURCE_NAME: Record<string, string> = {
   manual: 'lançado à mão', 'fatura-c6': 'fatura C6', 'fatura-nubank': 'fatura Nubank', 'extrato-nubank': 'extrato Nubank',
+  'fatura-itau': 'fatura Itaú', 'extrato-bb': 'extrato BB',
 };
 
 /** Compara cada repetido com o lançamento que já existe e deixa escolher qual manter (ou os dois). */

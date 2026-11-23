@@ -14,6 +14,7 @@ import { addMonths, currentMonth, lastDay, monthLabel, todayISO } from '../lib/m
 import { startMonthOf } from '../domain/ledger';
 import { Icon, ICONS } from '../components/icons';
 import { DEFAULT_THEME, themeById } from '../lib/themes';
+import { BANK_NAME } from '../import/prepare';
 import type { AppData } from '../useAppData';
 
 type Data = AppData & { profile: Profile };
@@ -190,7 +191,7 @@ function ImportSettings({ data }: { data: Data }) {
                 <input type="checkbox" checked={c.mine} onChange={(e) => run(() => setCardMine(c.id, e.target.checked))} />
                 <span className="switch" aria-hidden />
                 <span>
-                  <b>{c.bank === 'c6' ? 'C6' : 'Nubank'} final {c.last4}</b>
+                  <b>{BANK_NAME[c.bank] ?? c.bank} final {c.last4}</b>
                   <span className="muted small block">{c.holder}</span>
                 </span>
               </label>

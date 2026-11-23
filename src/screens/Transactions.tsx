@@ -29,6 +29,8 @@ const SOURCE_LABEL: Record<Transaction['source'], string> = {
   'fatura-c6': 'Fatura C6',
   'fatura-nubank': 'Fatura Nubank',
   'extrato-nubank': 'Extrato Nubank',
+  'fatura-itau': 'Fatura Itaú',
+  'extrato-bb': 'Extrato BB',
 };
 
 export function Transactions({ data, month, filter, setFilter }: Props) {

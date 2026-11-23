@@ -5,3 +5,5 @@ dev-dist/
 exemplos/
 *.pdf
 scripts/shots/
+
+.docs-md/
