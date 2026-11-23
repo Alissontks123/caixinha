@@ -985,9 +985,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 
 /* ================= Caixa surpresa ================= */
 .rarity-comum { --rar: #3f8f6b; }
-.rarity-raro { --rar: #3b78c4; }
-.rarity-epico { --rar: #8e4fd0; }
-.rarity-lendario { --rar: #c98a12; }
+.rarity-raro { --rar: #8e4fd0; }
 .rarity-tag {
   display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px;
   font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
@@ -1001,8 +999,6 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .box-art { flex: none; overflow: visible; }
 .box-idle { animation: boxBob 3.2s ease-in-out infinite; }
 @keyframes boxBob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-2deg); } }
-.box-pity { margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--primary-soft); color: var(--text); }
-.box-pity.on { font-weight: 700; }
 .box-open-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
 .box-odds summary { cursor: pointer; color: var(--primary); font-weight: 700; }
 .box-odds ul { list-style: none; margin: 10px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1017,9 +1013,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .box-reveal { position: relative; display: grid; place-items: center; height: 170px; overflow: hidden; border-radius: 18px;
   background: radial-gradient(circle, color-mix(in srgb, var(--rar) 30%, var(--surface)) 0%, var(--surface) 70%); }
 .rarity-glow-comum { --rar: #3f8f6b; }
-.rarity-glow-raro { --rar: #3b78c4; }
-.rarity-glow-epico { --rar: #8e4fd0; }
-.rarity-glow-lendario { --rar: #c98a12; }
+.rarity-glow-raro { --rar: #8e4fd0; }
 .box-rays { position: absolute; width: 340px; height: 340px; border-radius: 50%; opacity: 0.35;
   background: repeating-conic-gradient(var(--rar) 0deg 10deg, transparent 10deg 30deg);
   -webkit-mask: radial-gradient(circle, #000 15%, transparent 65%); mask: radial-gradient(circle, #000 15%, transparent 65%);

@@ -82,7 +82,7 @@ export async function buyItem(item: { key: string; name: string; price: number }
 export async function openBox(balance: number): Promise<ShopItem> {
   if (balance < BOX.price) throw new Error(`Faltam ${BOX.price - balance} estrelas para abrir a Caixa surpresa.`);
   const records = await db.stars.toArray();
-  const item = drawBox(ownedItems(records), records, secureRandom);
+  const item = drawBox(ownedItems(records), secureRandom);
   if (!item) throw new Error('Você já tem todos os itens da Loja!');
   await db.stars.put({
     id: `compra-${item.key}`, kind: 'compra', item: item.key, amount: BOX.price, date: todayISO(),

@@ -36,9 +36,6 @@ export function RarityTag({ rarity }: { rarity: Rarity }) {
 export function MysteryBoxCard({ stars }: { stars: StarsState }) {
   const [open, setOpen] = useState(false);
   const odds = boxOdds(stars.owned);
-  const premiumLeft = boxOdds(stars.owned, true).length > 0;
-  const guaranteed = premiumLeft && stars.boxPity >= BOX.pity;
-  const untilPremium = BOX.pity + 1 - stars.boxPity;
   return (
     <section className="card stack-sm box-card" data-tour="box">
       <div className="box-head">
@@ -52,19 +49,14 @@ export function MysteryBoxCard({ stars }: { stars: StarsState }) {
       </div>
       {odds.length > 0 && (
         <>
-          {premiumLeft && (
-            <p className={`small box-pity ${guaranteed ? 'on' : ''}`}>
-              {guaranteed ? 'A próxima caixa garante um item premium!' : `Premium garantido em até ${untilPremium} ${untilPremium === 1 ? 'caixa' : 'caixas'}.`}
-            </p>
-          )}
           <button type="button" className={`btn ${stars.balance >= BOX.price ? 'primary' : 'ghost'} box-open-btn`} onClick={() => setOpen(true)}>
             Abrir por <StarIcon size={14} /> {BOX.price}
           </button>
           <details className="box-odds">
             <summary className="small">Ver as chances</summary>
             <ul>
-              {(guaranteed ? boxOdds(stars.owned, true) : odds).map((o) => (
-                <li key={o.rarity}>
+              {odds.map((o) => (
+                <li key={o.group}>
                   <RarityTag rarity={o.rarity} />
                   <span className="small muted">{o.items.length} {o.what}</span>
                   <b>{pct(o.chance)}</b>
@@ -72,8 +64,8 @@ export function MysteryBoxCard({ stars }: { stars: StarsState }) {
               ))}
             </ul>
             <p className="small muted">
-              Dentro de cada raridade, todos os itens têm a mesma chance. Itens que você já tem saem do sorteio, e a chance deles passa
-              para os outros. Depois de {BOX.pity} caixas seguidas sem premium, a próxima garante um.
+              Dentro de cada grupo, todos os itens têm a mesma chance. Itens que você já tem saem do sorteio, e a chance deles passa
+              para os outros.
             </p>
           </details>
         </>
@@ -146,7 +138,7 @@ function BoxDialog({ balance, owned, onClose }: { balance: number; owned: Set<st
             <div className="box-won">
               <RarityTag rarity={rarity} />
               <b className="box-won-name">{item.name}</b>
-              <span className="small muted">{item.kind === 'tema' ? 'Tema' : 'Avatar'}{item.premium ? ' premium' : ''} · agora é seu, em todos os aparelhos</span>
+              <span className="small muted">{item.kind === 'tema' ? 'Tema' : 'Avatar'} · agora é seu, em todos os aparelhos</span>
             </div>
             <div className="row-end box-actions">
               {moreItems && left >= BOX.price && (

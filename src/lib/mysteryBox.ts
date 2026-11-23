@@ -1,58 +1,43 @@
 /**
  * Caixa surpresa da Loja: sorteia um item que a pessoa ainda NÃO tem (nunca repete).
- * Chances por raridade; quando uma raridade acaba, a chance dela vai para as outras na mesma proporção.
- * Garantia: depois de 5 caixas seguidas sem item premium, a 6ª dá um premium (se ainda houver).
+ * Duas raridades: Comum (avatares e temas comuns) e Raro (avatares e temas premium).
+ * Cada grupo tem a sua chance; quando um grupo acaba, a chance dele vai para os outros na mesma proporção.
  */
-import type { StarRecord } from '../domain/stars';
 import { SHOP_ITEMS, type ShopItem } from './shop';
 
-export const BOX = { price: 150, pity: 5 };
+export const BOX = { price: 150 };
 
-export type Rarity = 'comum' | 'raro' | 'epico' | 'lendario';
+export type Rarity = 'comum' | 'raro';
 
-export const RARITIES: { id: Rarity; name: string; weight: number; what: string }[] = [
-  { id: 'comum', name: 'Comum', weight: 50, what: 'avatares' },
-  { id: 'raro', name: 'Raro', weight: 30, what: 'temas' },
-  { id: 'epico', name: 'Épico', weight: 12, what: 'avatares premium' },
-  { id: 'lendario', name: 'Lendário', weight: 8, what: 'temas premium' },
+export const RARITY_NAMES: Record<Rarity, string> = { comum: 'Comum', raro: 'Raro' };
+
+export const rarityOf = (i: ShopItem): Rarity => (i.premium ? 'raro' : 'comum');
+export const rarityName = (r: Rarity) => RARITY_NAMES[r];
+
+type GroupId = 'avatar' | 'tema' | 'avatar-raro' | 'tema-raro';
+
+/** Grupos do sorteio, com a chance de cada um. */
+export const BOX_GROUPS: { id: GroupId; rarity: Rarity; kind: ShopItem['kind']; weight: number; what: string }[] = [
+  { id: 'avatar', rarity: 'comum', kind: 'avatar', weight: 50, what: 'avatares' },
+  { id: 'tema', rarity: 'comum', kind: 'tema', weight: 30, what: 'temas' },
+  { id: 'avatar-raro', rarity: 'raro', kind: 'avatar', weight: 12, what: 'avatares' },
+  { id: 'tema-raro', rarity: 'raro', kind: 'tema', weight: 8, what: 'temas' },
 ];
 
-export const rarityOf = (i: ShopItem): Rarity =>
-  i.kind === 'avatar' ? (i.premium ? 'epico' : 'comum') : (i.premium ? 'lendario' : 'raro');
+export interface GroupOdds { group: GroupId; rarity: Rarity; what: string; chance: number; items: ShopItem[] }
 
-export const rarityName = (r: Rarity) => RARITIES.find((x) => x.id === r)!.name;
-
-export interface RarityOdds { rarity: Rarity; name: string; what: string; chance: number; items: ShopItem[] }
-
-/** Chances de cada raridade entre os itens que a pessoa ainda não tem (soma 1; vazio = já tem tudo). */
-export function boxOdds(owned: Set<string>, onlyPremium = false): RarityOdds[] {
-  const groups = RARITIES
-    .filter((r) => !onlyPremium || r.id === 'epico' || r.id === 'lendario')
-    .map((r) => ({ ...r, items: SHOP_ITEMS.filter((i) => rarityOf(i) === r.id && !owned.has(i.key)) }))
+/** Chances de cada grupo entre os itens que a pessoa ainda não tem (soma 1; vazio = já tem tudo). */
+export function boxOdds(owned: Set<string>): GroupOdds[] {
+  const groups = BOX_GROUPS
+    .map((g) => ({ ...g, items: SHOP_ITEMS.filter((i) => i.kind === g.kind && rarityOf(i) === g.rarity && !owned.has(i.key)) }))
     .filter((g) => g.items.length > 0);
   const total = groups.reduce((s, g) => s + g.weight, 0);
-  return groups.map((g) => ({ rarity: g.id, name: g.name, what: g.what, chance: g.weight / total, items: g.items }));
+  return groups.map((g) => ({ group: g.id, rarity: g.rarity, what: g.what, chance: g.weight / total, items: g.items }));
 }
-
-/** Quantas caixas seguidas (das mais recentes para trás) saíram sem item premium. */
-export function boxPityCount(records: StarRecord[]): number {
-  const boxes = records.filter((r) => r.box).sort((a, b) => (b.openedAt ?? 0) - (a.openedAt ?? 0));
-  let n = 0;
-  for (const r of boxes) {
-    const item = SHOP_ITEMS.find((i) => i.key === r.item);
-    if (item?.premium) break;
-    n += 1;
-  }
-  return n;
-}
-
-/** A próxima caixa garante um premium? (só se ainda houver premium para ganhar) */
-export const pityActive = (records: StarRecord[], owned: Set<string>) =>
-  boxPityCount(records) >= BOX.pity && boxOdds(owned, true).length > 0;
 
 /** Sorteia o item da caixa. `rand` devolve um número em [0, 1). Null = já tem tudo. */
-export function drawBox(owned: Set<string>, records: StarRecord[], rand: () => number): ShopItem | null {
-  const odds = boxOdds(owned, pityActive(records, owned));
+export function drawBox(owned: Set<string>, rand: () => number): ShopItem | null {
+  const odds = boxOdds(owned);
   if (!odds.length) return null;
   let r = rand();
   let group = odds[odds.length - 1];
