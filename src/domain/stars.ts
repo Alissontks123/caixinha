@@ -5,8 +5,9 @@
  * se um mês for reaberto e mudar, o saldo acompanha. A exceção são os marcos da meta, que valem uma vez
  * na vida e por isso ficam registrados. As compras da loja também ficam registradas (tabela `stars`).
  */
-import { addMonths, lastDay as lastDayOf, monthShort } from '../lib/months';
+import { addMonths, lastDay as lastDayOf, monthOf, monthRange, monthShort } from '../lib/months';
 import { computeLedger, computeStatements, startMonthOf, type LedgerInput } from './ledger';
+import { fixedForMonth } from './rules';
 import type { Cents, ISODate, Month } from './types';
 
 export const STAR_RULES = {
@@ -100,10 +101,9 @@ export function starEntries(input: StarsInput): StarEntry[] {
     }
   }
 
-  // aporte fixo pago por completo (a caixinha quita o mês mais antigo primeiro; o fixo vem antes do excedente)
-  for (const row of computeLedger(input).months) {
-    if (row.month > todayMonth || row.fixed <= 0 || row.paid < row.fixed) continue;
-    out.push({ id: `fixo:${row.month}`, group: 'fixo', date: row.month === todayMonth ? input.today : lastDayOf(row.month), amount: STAR_RULES.fixo, label: `Aporte fixo de ${monthShort(row.month)} pago` });
+  // aporte fixo pago por completo
+  for (const [month, date] of fixedPaidMonths(input)) {
+    out.push({ id: `fixo:${month}`, group: 'fixo', date, amount: STAR_RULES.fixo, label: `Aporte fixo de ${monthShort(month)} pago` });
   }
 
   // aporte extra: uma vez por mês
@@ -119,6 +119,40 @@ export function starEntries(input: StarsInput): StarEntry[] {
     out.push({ id: r.id, group: r.kind === 'compra' ? 'compra' : 'meta', date: r.date, label: r.label, amount: r.kind === 'compra' ? -r.amount : r.amount });
   }
   return out.sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount);
+}
+
+/**
+ * Meses com o aporte fixo pago e a data em que ficou completo.
+ * Cada aplicação quita primeiro o que está em aberto até o mês dela (o mais antigo antes; o fixo antes do
+ * excedente). O que sobra NÃO adianta o fixo dos meses seguintes: pagar adiantado conta como aporte extra.
+ */
+export function fixedPaidMonths(input: LedgerInput): Map<Month, ISODate> {
+  const start = startMonthOf(input.profile);
+  const todayMonth = monthOf(input.today);
+  const out = new Map<Month, ISODate>();
+  if (todayMonth < start) return out;
+  const valid = input.movements.filter((m) => !m.deleted && m.date > input.profile.caixinhaStartDate);
+  const overflow = new Map(input.closings.filter((c) => c.month >= start).map((c) => [c.month, c.overflowTotal]));
+  const open: { month: Month; fixo: boolean; left: Cents }[] = [];
+  for (const month of monthRange(start, todayMonth)) {
+    const fixed = fixedForMonth(input.fixedVersions, month, start);
+    if (fixed > 0) open.push({ month, fixo: true, left: fixed });
+    if ((overflow.get(month) ?? 0) > 0) open.push({ month, fixo: false, left: overflow.get(month)! });
+    for (const r of valid.filter((m) => m.type === 'resgate' && monthOf(m.date) === month)) open.push({ month, fixo: false, left: r.amount });
+    const pays = valid.filter((m) => m.type === 'aplicacao' && monthOf(m.date) === month).sort((a, b) => a.date.localeCompare(b.date));
+    for (const p of pays) {
+      let amount = p.amount;
+      for (const d of open) {
+        if (amount <= 0) break;
+        if (d.left <= 0) continue;
+        const used = Math.min(amount, d.left);
+        d.left -= used;
+        amount -= used;
+        if (d.fixo && d.left === 0) out.set(d.month, p.date);
+      }
+    }
+  }
+  return out;
 }
 
 export function starTotals(entries: StarEntry[]) {

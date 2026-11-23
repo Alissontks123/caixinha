@@ -38,6 +38,17 @@ describe('estrelas', () => {
     expect(ids(input({ movements: [app('2026-09-10', 299)] }))).not.toContain('fixo:2026-09');
   });
 
+  it('pagar adiantado conta só como extra; pagar atrasado ainda conta o fixo do mês que faltava', () => {
+    // setembro: 600 (fixo de set + 300 a mais) → fixo de set e extra de set; outubro não fica pago com a sobra
+    const adiantado = ids(input({ movements: [app('2026-09-10', 600)] }));
+    expect(adiantado).toEqual(expect.arrayContaining(['fixo:2026-09', 'extra:2026-09']));
+    expect(adiantado).not.toContain('fixo:2026-10');
+    // setembro sem nada; em outubro paga 600 → quita set (atrasado) e out
+    const atrasado = ids(input({ movements: [app('2026-10-05', 600)] }));
+    expect(atrasado).toEqual(expect.arrayContaining(['fixo:2026-09', 'fixo:2026-10']));
+    expect(atrasado).not.toContain('extra:2026-10');
+  });
+
   it('aporte extra: só o que passa do devido (fixo + excedente + o que faltava antes), a partir de 20% do fixo, uma vez no mês', () => {
     const closings = [closing('2026-09', '2026-10-02', [cat({ spent: R(1100), contribution: R(50) })])];
     // setembro: devia 300 (fixo) e pagou 300; o excedente de 50 passa para outubro
@@ -71,8 +82,8 @@ describe('estrelas', () => {
 
     const compra: StarRecord = { id: 'compra-avatar:panda', kind: 'compra', item: 'avatar:panda', amount: 100, date: '2026-11-15', label: 'Comprou Panda' };
     const t = starTotals(starEntries({ ...i, records: [...marcos, compra] }));
-    // 600 em setembro: fixo de set (+100), adianta o fixo de out (+100) e é extra em set (+300); + 2 marcos (+500) − Panda
-    expect(t).toEqual({ earned: 1000, spent: 100, balance: 900 });
+    // 600 em setembro: fixo de set (+100) e extra em set (+300); a sobra não paga o fixo de out; + 2 marcos (+500) − Panda
+    expect(t).toEqual({ earned: 900, spent: 100, balance: 800 });
     expect([...ownedItems([...marcos, compra])]).toEqual(['avatar:panda']);
   });
 });

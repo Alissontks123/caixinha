@@ -99,7 +99,7 @@ export function Store({ profile, stars, onPreviewTheme }: { profile: Profile; st
         <ul className="rules-list">
           <li><b>+{STAR_RULES.organizado}</b> por mês fechado até o dia {STAR_RULES.organizadoDia} do mês seguinte (o mês só fecha com tudo classificado).</li>
           <li><b>+{STAR_RULES.categoria}</b> por categoria com limite que fechar o mês sem gerar aporte (sem passar do limite).</li>
-          <li><b>+{STAR_RULES.fixo}</b> quando o aporte fixo do mês estiver todo aplicado na caixinha.</li>
+          <li><b>+{STAR_RULES.fixo}</b> quando o aporte fixo do mês estiver todo aplicado na caixinha (pagar adiantado conta como aporte extra do mês em que você pagou, não como o fixo do mês seguinte).</li>
           <li><b>+{STAR_RULES.meta}</b> quando a caixinha chega a 25%, 50%, 75% e 100% da sua meta (cada marco vale uma vez só).</li>
           <li><b>+{STAR_RULES.extra}</b> uma vez por mês, se você aplicar além do devido pelo menos {STAR_RULES.extraPct * 100}% do aporte fixo
             (o devido é o fixo, os aportes por gastos excedentes, os resgates e o que faltou de meses anteriores).</li>

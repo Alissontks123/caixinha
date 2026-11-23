@@ -90,7 +90,7 @@ function PreviewSide({ theme, palette: p, label, dark }: { theme: Theme; palette
     <div className="preview-side" style={{ background: p.bg, color: p.text, borderColor: p.border }}>
       <ThemeBackdrop effect={theme.effect} contained dark={!!dark} />
       <span className="small" style={{ color: p.muted }}>{label}</span>
-      <div className="preview-hero" style={{ background: p.primary, color: p.ink, borderRadius: Math.round(theme.radius * 0.6) }}>
+      <div className="preview-hero" style={{ background: p.heroBg ?? p.primary, color: p.heroInk ?? p.ink, borderRadius: Math.round(theme.radius * 0.6) }}>
         {theme.effect ? <HeroDecor effect={theme.effect} /> : <span className="preview-motif"><Icon d={theme.motif} size={52} width={1.2} /></span>}
         <span className="preview-label">Aportes do mês</span>
         <b>R$ 440,00</b>

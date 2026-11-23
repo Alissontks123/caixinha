@@ -689,7 +689,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 /* cartão do mês: cor principal do tema, com o desenho do tema ao fundo */
 .hero {
   position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 4px;
-  background: var(--primary); color: var(--primary-ink); border-radius: calc(var(--radius) + 6px); padding: 20px;
+  background: var(--hero-bg, var(--primary)); color: var(--hero-ink, var(--primary-ink)); border-radius: calc(var(--radius) + 6px); padding: 20px;
 }
 .hero > * { position: relative; }
 .hero .hero-motif { position: absolute; right: -36px; bottom: -48px; opacity: 0.16; pointer-events: none; }
@@ -852,6 +852,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 .fx-twinkle { position: absolute; color: #ffe9a8; animation: fxBlink ease-in-out infinite; }
 .hero-fx-soneca .fx-moon { position: absolute; right: 22px; bottom: 18px; opacity: 0.9; }
 .hero-wrap-soneca { position: relative; margin-top: 44px; }
+.hero-wrap-soneca .hero-badge { background: var(--hero-bg, var(--primary)); }
 .sleeping-cat { position: absolute; z-index: 2; left: 28px; top: -50px; width: 130px; height: 56px; pointer-events: none; }
 .sleeping-cat svg { position: absolute; left: 0; top: 0; overflow: visible; }
 .fx-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: fxBreathe 3.6s ease-in-out infinite; }
@@ -935,7 +936,7 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
 /* ================= loja de estrelas ================= */
 .tabbar button { font-size: 0.62rem; }
 .store-hero .hero-value { display: flex; align-items: center; gap: 8px; }
-.store-hero .hero-motif { color: var(--primary-ink); }
+.store-hero .hero-motif { color: var(--hero-ink, var(--primary-ink)); }
 .forecast-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .forecast-list li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
 .forecast-list li:first-child { border-top: 0; }

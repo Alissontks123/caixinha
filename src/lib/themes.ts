@@ -18,6 +18,9 @@ export interface Palette {
   hero: string;
   /** Cor do desenho decorativo do tema. */
   accent: string;
+  /** Fundo e texto do quadro principal (cartão do mês, Caixinha, Loja). Sem isso: a cor principal. */
+  heroBg?: string;
+  heroInk?: string;
 }
 
 export interface Theme {
@@ -120,7 +123,7 @@ export const THEMES: Theme[] = [
     id: 'soneca', name: 'Soneca', tagline: 'Um gatinho dormindo no seu mês', radius: 24, premium: true, effect: 'soneca',
     motif: 'M4 18c0-5 4-9 9-9s8 3 8 7v2z M5 12l-1-4 3 2 M10 10.5l1-3.5 1.5 3 M7.5 14.5q1 1 2 0',
     light: { bg: '#f3f0fb', surface: '#ffffff', surface2: '#ece8f8', text: '#26234a', muted: '#5c5880', border: '#e2ddf4', primary: '#4a4592', ink: '#ffffff', soft: '#e2def7', hero: '#e8e4f8', accent: '#f2b37c' },
-    dark: { bg: '#12112a', surface: '#1b1a3a', surface2: '#232248', text: '#ecebfb', muted: '#a9a6d0', border: '#2b2a55', primary: '#b3adf5', ink: '#1a1740', soft: '#29275a', hero: '#201f48', accent: '#f2b37c' },
+    dark: { bg: '#12112a', surface: '#1b1a3a', surface2: '#232248', text: '#ecebfb', muted: '#a9a6d0', border: '#2b2a55', primary: '#b3adf5', ink: '#1a1740', soft: '#29275a', hero: '#201f48', accent: '#f2b37c', heroBg: '#1c2757', heroInk: '#eef0ff' },
   },
 ];
 
@@ -135,7 +138,7 @@ function vars(p: Palette, dark: boolean): string {
   return [
     `--bg:${p.bg}`, `--surface:${p.surface}`, `--surface-2:${p.surface2}`, `--text:${p.text}`, `--muted:${p.muted}`,
     `--border:${p.border}`, `--primary:${p.primary}`, `--primary-ink:${p.ink}`, `--primary-soft:${p.soft}`,
-    `--hero:${p.hero}`, `--hero-border:${p.border}`, `--track:${p.surface2}`, `--accent:${p.accent}`,
+    `--hero:${p.hero}`, `--hero-bg:${p.heroBg ?? p.primary}`, `--hero-ink:${p.heroInk ?? p.ink}`, `--hero-border:${p.border}`, `--track:${p.surface2}`, `--accent:${p.accent}`,
     `--chart-grid:${p.border}`, `--chart-baseline:${p.border}`, `--chart-axis:${p.muted}`, `--chart-track:${p.surface2}`,
     `color-scheme:${dark ? 'dark' : 'light'}`,
   ].join(';');

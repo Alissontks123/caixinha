@@ -29,6 +29,7 @@ describe('temas', () => {
           ['texto/fundo', p.text, p.bg], ['texto/cartão', p.text, p.surface],
           ['secundário/fundo', p.muted, p.bg], ['secundário/cartão', p.muted, p.surface],
           ['botão', p.ink, p.primary], ['destaque/cartão', p.primary, p.surface], ['selo', p.primary, p.soft],
+          ['quadro principal', p.heroInk ?? p.ink, p.heroBg ?? p.primary],
         ];
         for (const [what, a, b] of pairs) {
           expect(contrast(a, b), `${t.name}: ${what}`).toBeGreaterThanOrEqual(4.5);
